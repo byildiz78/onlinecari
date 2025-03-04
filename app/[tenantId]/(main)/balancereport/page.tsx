@@ -42,8 +42,6 @@ export default function BalanceReportPage() {
                         headers: { "Content-Type": "application/json" },
                     }
                 )
-                console.log('1',latestFilter?.date?.from);
-                console.log('2',latestFilter?.date?.to);
 
                 setBalanceCustomers(response.data);
             } catch (error) {

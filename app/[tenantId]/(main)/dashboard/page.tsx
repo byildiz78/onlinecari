@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { WebWidget, WebWidgetData } from "@/types/tables";
 import { useFilterStore } from "@/stores/filters-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -13,13 +13,10 @@ import axios from "@/lib/axios";
 import { Card } from "@/components/ui/card";
 import { TrendsChart } from "./components/TrendsChart";
 import { toast } from "@/components/ui/toast/use-toast";
-const REFRESH_INTERVAL = 90000; // 90 seconds in milliseconds
-
-interface Settings {
-    minDiscountAmount: number;
-    minCancelAmount: number;
-    minSaleAmount: number;
-}
+import { useFilterEventStore } from "@/stores/filter-event-store";
+import { useDashboardStore } from "@/stores/dashboard-store";
+import { useRefreshStore, REFRESH_INTERVAL } from "@/stores/refresh-store";
+import { useCountdown } from "@/hooks/useCountdown";
 
 // Define interfaces for the dashboard data
 interface TopDebtor {
@@ -54,6 +51,16 @@ interface DashboardData {
     }[];
 }
 
+interface Branch {
+    BranchID: string | number;
+}
+
+interface Settings {
+    minDiscountAmount: number;
+    minCancelAmount: number;
+    minSaleAmount: number;
+}
+
 const DEFAULT_SETTINGS: Settings = {
     minDiscountAmount: 0,
     minCancelAmount: 0,
@@ -80,6 +87,13 @@ export default function Dashboard() {
         trendsChart: true,
         topDebtors: true,
     });
+    
+    // Yeni state ve store değişkenleri
+    const [hasFetched, setHasFetched] = useState(false);
+    const [localDateFilter, setLocalDateFilter] = useState(selectedFilter.date);
+    const { setIsDashboardTab } = useDashboardStore();
+    const { filterApplied, setFilterApplied } = useFilterEventStore();
+    const { setShouldFetch, shouldFetch } = useRefreshStore();
 
     useEffect(() => {
         if (selectedFilter.branches) {
@@ -87,114 +101,142 @@ export default function Dashboard() {
         }
     }, [selectedFilter]);
 
+    // Dashboard verilerini yükleyen fonksiyon
+    const fetchData = useCallback(async (isInitial = false) => {
+        if (activeTab !== "dashboard" || document.hidden) return;
 
-    useEffect(() => {
-        if (activeTab === "dashboard") {
-            const fetchDashboardData = async () => {
-                try {
-                    setLoading(true);
-                    const response = await axios.post<DashboardData>("/api/widgetreport", {
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                    });
-                    setDashboardData(response.data);
-                    setLoadingCards({
-                        totalCollection: false,
-                        totalSales: false,
-                        currentMonthCollection: false,
-                        currentMonthSales: false,
-                        trendsChart: false,
-                        topDebtors: false,
-                    });
-                } catch (error) {
-                    console.error("Error fetching dashboard data:", error);
-                } finally {
-                    setLoading(false);
+        console.log("Fetching dashboard data...");
+
+        try {
+            setLoading(true);
+            setLoadingCards({
+                totalCollection: true,
+                totalSales: true,
+                currentMonthCollection: true,
+                currentMonthSales: true,
+                trendsChart: true,
+                topDebtors: true,
+            });
+
+            const response = await axios.post<DashboardData>(
+                "/api/widgetreport",
+                {
+                    date1: selectedFilter.date.from,
+                    date2: selectedFilter.date.to,
+                },
+                {
+                    headers: { "Content-Type": "application/json" },
                 }
-            };
-
-            fetchDashboardData();
-
-            const countdownInterval = setInterval(() => {
-                setCountdown((prevCount) => {
-                    if (prevCount <= 1) {
-                        setRefreshTrigger(prev => prev + 1);
-                        return REFRESH_INTERVAL / 1000;
-                    }
-                    return prevCount - 1;
+            );
+            
+            console.log("Dashboard data fetched successfully:", response.data);
+            setDashboardData(response.data);
+            setHasFetched(true);
+            
+            setLoadingCards({
+                totalCollection: false,
+                totalSales: false,
+                currentMonthCollection: false,
+                currentMonthSales: false,
+                trendsChart: false,
+                topDebtors: false,
+            });
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            
+            // API'den 404 hatası geldiğinde (veri bulunamadı)
+            if (error.response && error.response.status === 404) {
+                toast({
+                    title: "Bilgi",
+                    description: "Dashboard verileri bulunamadı. Lütfen daha sonra tekrar deneyin.",
+                    variant: "default",
                 });
-            }, 1000);
-
-            return () => clearInterval(countdownInterval);
+            } else {
+                // Diğer hatalar için
+                toast({
+                    title: "Hata!",
+                    description: "Dashboard verilerini alırken bir sorun oluştu. Lütfen tekrar deneyin.",
+                    variant: "destructive",
+                });
+            }
+            
+            // Yükleme durumlarını sıfırla
+            setLoadingCards({
+                totalCollection: false,
+                totalSales: false,
+                currentMonthCollection: false,
+                currentMonthSales: false,
+                trendsChart: false,
+                topDebtors: false,
+            });
+        } finally {
+            setLoading(false);
         }
-    }, [activeTab]);
+    }, [selectedFilter.date, activeTab]);
 
+    // Kullanıcının istediği useEffect'ler
     useEffect(() => {
-        if (activeTab === "dashboard") {
-            const fetchDashboardData = async () => {
-                try {
-                    setLoading(true);
-                    setLoadingCards({
-                        totalCollection: true,
-                        totalSales: true,
-                        currentMonthCollection: true,
-                        currentMonthSales: true,
-                        trendsChart: true,
-                        topDebtors: true,
-                    });
-                    const response = await axios.post<DashboardData>("/api/widgetreport", {
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                    });
-                    setDashboardData(response.data);
-                    setLoadingCards({
-                        totalCollection: false,
-                        totalSales: false,
-                        currentMonthCollection: false,
-                        currentMonthSales: false,
-                        trendsChart: false,
-                        topDebtors: false,
-                    });
-                } catch (error) {
-                    console.error("Error refreshing dashboard data:", error);
-                    
-                    // API'den 404 hatası geldiğinde (veri bulunamadı)
-                    if (error.response && error.response.status === 404) {
-                        toast({
-                            title: "Bilgi",
-                            description: "Dashboard verileri bulunamadı. Lütfen daha sonra tekrar deneyin.",
-                            variant: "default",
-                        });
-                    } else {
-                        // Diğer hatalar için
-                        toast({
-                            title: "Hata!",
-                            description: "Dashboard verilerini alırken bir sorun oluştu. Lütfen tekrar deneyin.",
-                            variant: "destructive",
-                        });
-                    }
-                    
-                    // Yükleme durumlarını sıfırla
-                    setLoadingCards({
-                        totalCollection: false,
-                        totalSales: false,
-                        currentMonthCollection: false,
-                        currentMonthSales: false,
-                        trendsChart: false,
-                        topDebtors: false,
-                    });
-                } finally {
-                    setLoading(false);
-                }
-            };
+        if (activeTab !== "dashboard" || document.hidden) return;
 
-            if (refreshTrigger > 0) {
-                fetchDashboardData();
+        console.log("Dashboard tab active, hasFetched:", hasFetched);
+
+        // İlk yükleme durumu
+        if (!hasFetched) {
+            console.log("Initial fetch triggered");
+            fetchData(true);
+            return;
+        }
+    }, [activeTab, hasFetched, fetchData]);
+
+    // Filtre değişikliği veya yenileme durumu için ayrı bir useEffect
+    useEffect(() => {
+        if (activeTab !== "dashboard" || document.hidden || !hasFetched) return;
+
+        if (filterApplied || shouldFetch) {
+            console.log("Filter applied or refresh triggered:", { filterApplied, shouldFetch });
+            fetchData(false);
+            
+            if (filterApplied) {
+                console.log("Resetting filterApplied");
+                setFilterApplied(false);
+            }
+            
+            if (shouldFetch) {
+                console.log("Resetting shouldFetch");
+                setShouldFetch(false);
             }
         }
-    }, [refreshTrigger, activeTab]);
+    }, [
+        activeTab,
+        filterApplied,
+        shouldFetch,
+        fetchData,
+        setFilterApplied,
+        setShouldFetch,
+        hasFetched
+    ]);
+
+    useEffect(() => {
+        setIsDashboardTab(activeTab === "dashboard");
+    }, [activeTab, setIsDashboardTab]);
+
+    useEffect(() => {
+        if (filterApplied && activeTab === "dashboard") {
+            setLocalDateFilter(selectedFilter.date);
+        }
+    }, [filterApplied, selectedFilter.date]);
+
+    const handleCountdownTick = useCallback((value: number) => {
+        if (value === 5) {
+            setShouldFetch(true);
+        }
+    }, [setShouldFetch]);
+
+    const count = useCountdown(
+        REFRESH_INTERVAL / 1000,
+        activeTab === "dashboard",
+        handleCountdownTick
+    );
 
     return (
         <div className="h-full flex">
@@ -231,7 +273,7 @@ export default function Dashboard() {
                                 <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
                             </svg>
                         </div>
-                        <span className="font-medium w-4 text-center">{countdown}</span>
+                        <span className="font-medium w-4 text-center">{count}</span>
                         <span>saniye</span>
                     </div>
                 </div>
@@ -454,7 +496,7 @@ export default function Dashboard() {
                         hover:[&::-webkit-scrollbar-thumb]:bg-gray-300/80
                         dark:hover:[&::-webkit-scrollbar-thumb]:bg-gray-700/80">
                     <NotificationPanel
-                        refreshTrigger={refreshTrigger}
+                        refreshTrigger={shouldFetch}
                     />
                 </div>
             </div>
