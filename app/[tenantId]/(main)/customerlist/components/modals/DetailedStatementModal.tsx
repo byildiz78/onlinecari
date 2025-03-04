@@ -25,7 +25,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { Calendar, FileSpreadsheet, Printer, Search } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronRight, FileSpreadsheet, Printer, Search } from 'lucide-react'
 import { mockDetailedStatementData } from "../../data/mock-data"
 
 interface DetailedStatementModalProps {
@@ -36,6 +36,26 @@ interface DetailedStatementModalProps {
     endDate?: string;
     setStartDate?: (value: string) => void;
     setEndDate?: (value: string) => void;
+}
+
+interface DetailedStatementItem {
+    date: string;
+    documentNo: string;
+    description: string;
+    amount: number;
+    type: string;
+    userCode: string;
+    hasItems?: boolean;
+    items?: {
+        name: string;
+        price: number;
+        quantity: number;
+        total: number;
+        discount: number;
+        netTotal: number;
+    }[];
+    paymentType?: string;
+    totalAmount?: number;
 }
 
 export function DetailedStatementModal({
@@ -50,7 +70,8 @@ export function DetailedStatementModal({
     // Local state için
     const [localStartDate, setLocalStartDate] = useState(startDate);
     const [localEndDate, setLocalEndDate] = useState(endDate);
-    const [filteredData, setFilteredData] = useState(mockDetailedStatementData);
+    const [filteredData, setFilteredData] = useState<DetailedStatementItem[]>(mockDetailedStatementData);
+    const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
     
     // Props'dan gelen setStartDate ve setEndDate fonksiyonları yoksa local state kullan
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,6 +111,14 @@ export function DetailedStatementModal({
             return acc + item.amount;
         }
     }, 0);
+
+    // Satır genişletme/daraltma işlemi
+    const toggleRowExpand = (documentNo: string) => {
+        setExpandedRows(prev => ({
+            ...prev,
+            [documentNo]: !prev[documentNo]
+        }));
+    };
     
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -191,6 +220,7 @@ export function DetailedStatementModal({
                     <Table>
                         <TableHeader className="sticky top-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
                             <TableRow className="hover:bg-transparent border-b border-gray-100 dark:border-gray-800">
+                                <TableHead className="w-10"></TableHead>
                                 <TableHead>Tarih</TableHead>
                                 <TableHead>Belge No</TableHead>
                                 <TableHead>Açıklama</TableHead>
@@ -201,24 +231,98 @@ export function DetailedStatementModal({
                         <TableBody>
                             {filteredData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                                         Seçilen tarih aralığında işlem bulunamadı
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 filteredData.map((item, index) => (
-                                    <TableRow key={index} className="group hover:bg-amber-50/50 dark:hover:bg-amber-900/20">
-                                        <TableCell className="font-medium">{item.date}</TableCell>
-                                        <TableCell>{item.documentNo}</TableCell>
-                                        <TableCell>{item.description}</TableCell>
-                                        <TableCell className={cn(
-                                            "text-right font-medium",
-                                            item.type === "debt" ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
-                                        )}>
-                                            {item.type === "debt" ? "-" : "+"}{formatCurrency(item.amount)}
-                                        </TableCell>
-                                        <TableCell>{item.userCode}</TableCell>
-                                    </TableRow>
+                                    <>
+                                        <TableRow 
+                                            key={`${item.documentNo}-${index}`} 
+                                            className={cn(
+                                                "group hover:bg-amber-50/50 dark:hover:bg-amber-900/20 cursor-pointer",
+                                                expandedRows[item.documentNo] && "bg-amber-50/70 dark:bg-amber-900/30"
+                                            )}
+                                            onClick={() => item.hasItems && toggleRowExpand(item.documentNo)}
+                                        >
+                                            <TableCell className="py-2">
+                                                {item.hasItems && (
+                                                    <div className="flex items-center justify-center">
+                                                        {expandedRows[item.documentNo] 
+                                                            ? <ChevronDown className="h-4 w-4 text-amber-600" /> 
+                                                            : <ChevronRight className="h-4 w-4 text-amber-600" />
+                                                        }
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="font-medium">{item.date}</TableCell>
+                                            <TableCell>{item.documentNo}</TableCell>
+                                            <TableCell>{item.description}</TableCell>
+                                            <TableCell className={cn(
+                                                "text-right font-medium",
+                                                item.type === "debt" ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                                            )}>
+                                                {item.type === "debt" ? "-" : "+"}{formatCurrency(item.amount)}
+                                            </TableCell>
+                                            <TableCell>{item.userCode}</TableCell>
+                                        </TableRow>
+                                        
+                                        {/* Ürün Detayları */}
+                                        {item.hasItems && expandedRows[item.documentNo] && (
+                                            <TableRow 
+                                                key={`${item.documentNo}-details-${index}`}
+                                                className="bg-amber-50/30 dark:bg-amber-900/10"
+                                            >
+                                                <TableCell colSpan={6} className="p-0">
+                                                    <div className="p-4 border-l-2 border-amber-400 ml-4 my-2">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <h4 className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                                                                Satış Detayları
+                                                            </h4>
+                                                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                                Ödeme Tipi: {item.paymentType}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow className="hover:bg-transparent border-b border-amber-200 dark:border-amber-800/30">
+                                                                    <TableHead className="text-xs font-medium text-amber-700 dark:text-amber-400">Ürün Adı</TableHead>
+                                                                    <TableHead className="text-xs font-medium text-amber-700 dark:text-amber-400 text-right">Fiyat</TableHead>
+                                                                    <TableHead className="text-xs font-medium text-amber-700 dark:text-amber-400 text-center">Miktar</TableHead>
+                                                                    <TableHead className="text-xs font-medium text-amber-700 dark:text-amber-400 text-right">Tutar</TableHead>
+                                                                    <TableHead className="text-xs font-medium text-amber-700 dark:text-amber-400 text-right">İndirim</TableHead>
+                                                                    <TableHead className="text-xs font-medium text-amber-700 dark:text-amber-400 text-right">Net Tutar</TableHead>
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {item.items?.map((product, productIndex) => (
+                                                                    <TableRow 
+                                                                        key={`${item.documentNo}-product-${productIndex}`}
+                                                                        className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20 border-b border-amber-100/50 dark:border-amber-800/10"
+                                                                    >
+                                                                        <TableCell className="py-1 text-sm">{product.name}</TableCell>
+                                                                        <TableCell className="py-1 text-sm text-right">{formatCurrency(product.price)}</TableCell>
+                                                                        <TableCell className="py-1 text-sm text-center">{product.quantity}</TableCell>
+                                                                        <TableCell className="py-1 text-sm text-right">{formatCurrency(product.total)}</TableCell>
+                                                                        <TableCell className="py-1 text-sm text-right">{formatCurrency(product.discount)}</TableCell>
+                                                                        <TableCell className="py-1 text-sm text-right font-medium">{formatCurrency(product.netTotal)}</TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                        
+                                                        <div className="flex justify-end mt-2">
+                                                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                Toplam: {formatCurrency(item.totalAmount || 0)}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </>
                                 ))
                             )}
                         </TableBody>

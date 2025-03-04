@@ -22,7 +22,7 @@ import { customers } from './data/mock-data'
 
 export default function CustomerListPage() {
     const { selectedFilter } = useFilterStore()
-    const { setActiveTab } = useTabStore()
+    const { addTab,setActiveTab } = useTabStore()
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null)
@@ -127,6 +127,13 @@ export default function CustomerListPage() {
 
     const handleNewCustomer = () => {
         const tabId = "Yeni Müşteri";
+        addTab({
+            id: tabId,
+            title: "Yeni Kullanıcı",
+            lazyComponent: () => import('./components/CreateCustomer').then(module => ({
+                default: (props: any) => <module.default {...props} />
+            }))
+        });
         setActiveTab(tabId);
     };
 

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import PulseLoader from "react-spinners/PulseLoader";
-import { Bell, CheckCircle2, Ban, Tag, AlertCircle, Clock, RefreshCw, ClipboardCheck, MapPin, CalendarDays } from "lucide-react";
+import { Bell, CheckCircle2, Ban, Tag, AlertCircle, Clock, RefreshCw, ClipboardCheck, MapPin, CalendarDays, ReceiptText, CreditCard } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { NotificationType } from "@/types/tables";
@@ -12,6 +12,7 @@ import { SettingsMenu } from "@/app/[tenantId]/(main)/dashboard/components/setti
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { useTabStore } from "@/stores/tab-store";
+import { mockNotifications } from "../data/mock-data";
 
 interface NotificationStyle {
     icon: typeof CheckCircle2;
@@ -37,7 +38,7 @@ const DEFAULT_SETTINGS: Settings = {
     minSaleAmount: 0
 };
 
-const NOTIFICATION_STYLES: Record<NotificationType, NotificationStyle> = {
+const NOTIFICATION_STYLES: Record<NotificationType | string, NotificationStyle> = {
     sale: {
         icon: CheckCircle2,
         color: "text-emerald-500",
@@ -62,6 +63,18 @@ const NOTIFICATION_STYLES: Record<NotificationType, NotificationStyle> = {
         borderColor: "border-amber-500/30",
         bgColor: "bg-amber-50 dark:bg-amber-500/10",
     },
+    "Satış İşlemi": {
+        icon: ReceiptText,
+        color: "text-emerald-500",
+        borderColor: "border-emerald-500/30",
+        bgColor: "bg-emerald-50 dark:bg-emerald-500/10",
+    },
+    "Tahsilat": {
+        icon: CreditCard,
+        color: "text-blue-500",
+        borderColor: "border-blue-500/30",
+        bgColor: "bg-blue-50 dark:bg-blue-500/10",
+    },
 };
 
 interface Notification {
@@ -70,13 +83,25 @@ interface Notification {
     formName: string;
     orderDateTime: string;
     type: string;
+    amount?: number;
+    customer?: string;
 }
 
 const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
-    const localHours = date.getUTCHours().toString().padStart(2, '0');
-    const localMinutes = date.getUTCMinutes().toString().padStart(2, '0');
+    const localHours = date.getHours().toString().padStart(2, '0');
+    const localMinutes = date.getMinutes().toString().padStart(2, '0');
     return `${localHours}:${localMinutes}`;
+};
+
+const formatCurrency = (amount: number | undefined) => {
+    if (amount === undefined) return "";
+    return new Intl.NumberFormat('tr-TR', { 
+        style: 'currency', 
+        currency: 'TRY',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2 
+    }).format(amount);
 };
 
 export default function NotificationPanel({
@@ -91,6 +116,7 @@ export default function NotificationPanel({
     const [hasFetched, setHasFetched] = useState(false);
     const { activeTab } = useTabStore();
     const [tempSettings, setTempSettings] = useState<Settings>(settings);
+    const [useMockData, setUseMockData] = useState(false);
 
     // Update tempSettings when settings prop changes
     useEffect(() => {
@@ -110,16 +136,27 @@ export default function NotificationPanel({
             }
             setError(null);
 
-            const { data } = await axios.post('/api/notifications', {
-                branches: selectedFilter.branches.map(item => item.BranchID),
-                ...settings
-            });
+            try {
+                const { data } = await axios.post('/api/notifications', {
+                    branches: selectedFilter.branches.map(item => item.BranchID),
+                    ...settings
+                });
 
-            setNotifications(Array.isArray(data) ? data : []);
-            setHasFetched(true);
+                setNotifications(Array.isArray(data) ? data : []);
+                setHasFetched(true);
+                setUseMockData(false);
+            } catch (error) {
+                console.error('Error fetching notifications, using mock data:', error);
+                setNotifications(mockNotifications);
+                setHasFetched(true);
+                setUseMockData(true);
+            }
+            
         } catch (err) {
-            console.error('Error fetching notifications:', err);
+            console.error('Error in fetchNotifications:', err);
             setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
+            setNotifications(mockNotifications);
+            setUseMockData(true);
         } finally {
             setLoading(false);
             setIntervalLoading(false);
@@ -139,6 +176,14 @@ export default function NotificationPanel({
             fetchNotifications(false);
         }
     }, [refreshTrigger, activeTab, selectedFilter.branches, settings, fetchNotifications]);
+
+    // Eğer hiç veri yoksa mock verileri kullan
+    useEffect(() => {
+        if (notifications.length === 0 && !loading && !intervalLoading) {
+            setNotifications(mockNotifications);
+            setUseMockData(true);
+        }
+    }, [notifications, loading, intervalLoading]);
 
     const renderNotification = useCallback((notification: Notification, index: number, isLastItem: boolean) => {
         const gradients = {
@@ -162,6 +207,8 @@ export default function NotificationPanel({
         const gradientIndex = index % 6
         const gradient = gradients[gradientIndex as keyof typeof gradients]
         const bgGradient = bgGradients[gradientIndex as keyof typeof bgGradients]
+
+        const NotificationIcon = NOTIFICATION_STYLES[notification.formName]?.icon || AlertCircle;
 
         return (
             <Card
@@ -219,9 +266,7 @@ export default function NotificationPanel({
                                 gradient,
                                 "text-white flex items-center justify-center"
                             )}>
-                                <span className="font-medium">
-                                    {notification.branchName?.charAt(0).toUpperCase() || 'N/A'}
-                                </span>
+                                <NotificationIcon className="h-4 w-4" />
                             </Avatar>
 
                             <div className="flex-1 min-w-0">
@@ -241,9 +286,28 @@ export default function NotificationPanel({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
-                                        <ClipboardCheck className="w-3 h-3" />
-                                        <span>{notification.type === "1" ? 'Form Oluşturuldu' : 'Form Güncellendi'}</span>
+                                    {useMockData && notification.customer && (
+                                        <div className="text-[13px] font-medium text-gray-800 dark:text-gray-200 mb-1">
+                                            {notification.customer}
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                                            <ClipboardCheck className="w-3 h-3" />
+                                            <span>{notification.type === "1" ? 'Form Oluşturuldu' : 'Form Güncellendi'}</span>
+                                        </div>
+                                        
+                                        {useMockData && notification.amount !== undefined && (
+                                            <div className={cn(
+                                                "text-[13px] font-medium",
+                                                notification.formName === "Satış İşlemi" 
+                                                    ? "text-emerald-600 dark:text-emerald-400" 
+                                                    : "text-blue-600 dark:text-blue-400"
+                                            )}>
+                                                {formatCurrency(notification.amount)}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -252,88 +316,80 @@ export default function NotificationPanel({
                 </div>
             </Card>
         )
-    }, [loading]);
-
-    if (loading && !hasFetched) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <PulseLoader color="#6366f1" size={18} margin={4} speedMultiplier={0.8} />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="flex items-center justify-center h-64 text-rose-500">
-                <AlertCircle className="h-6 w-6 mr-2" />
-                <p>Bildirimler yüklenirken hata oluştu</p>
-            </div>
-        );
-    }
+    }, [useMockData]);
 
     return (
-        <div className="h-full w-full">
-            <div className="w-full max-w-md mx-auto">
-                <div className="bg-background/95 backdrop-blur-sm sticky top-0 z-10 pb-3">
-                    <div className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-2">
-                            <div className="relative">
-                                <Bell className="h-5 w-5 text-foreground" />
-                                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-rose-500 rounded-full animate-pulse" />
-                            </div>
-                            <h2 className="text-base font-semibold">Bildirimler</h2>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {(intervalLoading) ? (
-                                <motion.div className="flex items-center gap-1">
-                                    <motion.div
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                    >
-                                        <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                                    </motion.div>
-                                    <span className="text-xs text-muted-foreground">Yenileniyor</span>
-                                </motion.div>
-                            ) : (
-                                <motion.div
-                                    animate={{ opacity: [0.5, 1, 0.5] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    Canlı
-                                </motion.div>
-                            )}
-                        </div>
-                        {/* <SettingsMenu 
-                            settings={tempSettings} 
-                            onSettingsChange={setTempSettings}
-                            onSave={handleSettingsSave}
-                            loading={settingsUpdateLoading}
-                            isOpen={isSettingsOpen}
-                            onOpenChange={setIsSettingsOpen}
-                        /> */}
-                    </div>
-
-                    <div className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
-                        Son Yapılan Denetimler
-                    </div>
+        <div className="flex flex-col h-full">
+            <div className="flex-none py-6 px-6 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Bildirimler</h2>
                 </div>
-
-                <div className="relative pl-6 pt-4">
-                    <div>
-                        {notifications.map((notification, index) =>
-                            renderNotification(notification, index, index === notifications.length - 1)
-                        )}
-                    </div>
+                <div className="flex items-center gap-2">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                onClick={() => fetchNotifications()}
+                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                {intervalLoading ? (
+                                    <PulseLoader color="currentColor" size={3} />
+                                ) : (
+                                    <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                )}
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="text-sm">Bildirimleri yenile</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <SettingsMenu settings={tempSettings} setSettings={setTempSettings} />
                 </div>
             </div>
 
-            {/* <OrderDetailDialog
-                isOpen={isOpen}
-                onOpenChange={setIsOpen}
-                orderDetail={orderDetail as OrderDetail | null}
-                loading={loading}
-            /> */}
+            <div className="flex-1 overflow-y-auto px-6 pb-6 
+                [&::-webkit-scrollbar]:w-2
+                [&::-webkit-scrollbar-thumb]:bg-gray-300/50
+                [&::-webkit-scrollbar-thumb]:rounded-full
+                [&::-webkit-scrollbar-track]:bg-transparent
+                dark:[&::-webkit-scrollbar-thumb]:bg-gray-700/50
+                hover:[&::-webkit-scrollbar-thumb]:bg-gray-300/80
+                dark:hover:[&::-webkit-scrollbar-thumb]:bg-gray-700/80"
+            >
+                {loading ? (
+                    <div className="flex justify-center py-10">
+                        <PulseLoader color="currentColor" size={8} />
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                        <AlertCircle className="w-10 h-10 mx-auto mb-3 text-amber-500" />
+                        <p>{error}</p>
+                        <button
+                            onClick={() => fetchNotifications(true)}
+                            className="mt-4 text-sm text-amber-600 dark:text-amber-400 hover:underline"
+                        >
+                            Yeniden dene
+                        </button>
+                    </div>
+                ) : notifications.length === 0 ? (
+                    <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                        <Bell className="w-10 h-10 mx-auto mb-3 text-gray-400 dark:text-gray-600" />
+                        <p>Son 24 saat içinde bildirim yok</p>
+                    </div>
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {notifications.map((notification, index) => renderNotification(
+                            notification,
+                            index,
+                            index === notifications.length - 1
+                        ))}
+                    </motion.div>
+                )}
+            </div>
         </div>
     );
 }
