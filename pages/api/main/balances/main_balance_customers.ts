@@ -27,6 +27,7 @@ export default async function handler(
         const date2Formatted = formatInTimeZone(date2Parsed, timeZone, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
         const tenantId = extractTenantId(req.headers.referer);
+        console.log('API: Tenant ID:', tenantId);
         const query = `
         SELECT 
             c.CustomerName AS [CustomerName],

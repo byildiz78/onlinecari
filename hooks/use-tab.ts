@@ -13,7 +13,8 @@ export function useTab() {
             to: toZonedTime(addDays(new Date().setHours(23, 59, 59, 999), 1), 'Europe/Istanbul')
         },
         branches: [],
-        selectedBranches: []
+        selectedBranches: [],
+        selectedDateRange: 'today'
     });
 
     const handleTabOpen = (id: string, title: string) => {

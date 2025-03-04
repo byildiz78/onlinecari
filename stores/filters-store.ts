@@ -1,10 +1,11 @@
 import { create } from 'zustand'
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subDays, subWeeks, subMonths, subYears, addDays } from 'date-fns'
 import { DateRange } from 'react-day-picker'
-import { Efr_Branches, Efr_Tags } from '@/types/tables'
+import { Efr_Branches } from '@/types/tables'
 import { useSettingsStore } from './settings-store'
 import { useTabStore } from './tab-store'
 import { toZonedTime } from 'date-fns-tz';
+import { Efr_Tags } from '@/pages/api/settings/efr_tag/types'
 
 interface FilterState {
   date: {
@@ -16,6 +17,7 @@ interface FilterState {
   selectedBranches: Efr_Branches[];
   selectedTags: Efr_Tags[];
   appliedAt?: number;
+  selectedDateRange?: string;
 }
 
 interface FilterStore {
@@ -35,7 +37,7 @@ export const useFilterStore = create<FilterStore>((set) => ({
   selectedFilter: {
     date: {
       from: toZonedTime(new Date(new Date().setHours(0, 0, 0, 0)), 'Europe/Istanbul'),
-      to: toZonedTime(addDays(new Date().setHours(23, 59, 59, 999), 1), 'Europe/Istanbul'),
+      to: toZonedTime(new Date().setHours(23, 59, 59, 999), 'Europe/Istanbul'),
     },
     branches: [],
     tags: [],
@@ -46,7 +48,6 @@ export const useFilterStore = create<FilterStore>((set) => ({
 
   setFilter: (filter: FilterState) =>
     set((state) => {
-
       // Tüm seçili tag'lerin branch'larını birleştir
       const allBranchIDs = filter.selectedTags?.reduce((ids: string[], tag) => {
         return [...ids, ...tag.BranchID];
@@ -58,22 +59,27 @@ export const useFilterStore = create<FilterStore>((set) => ({
           )
         : filter.selectedBranches;
 
-      const newState = {
-        selectedFilter: {
-          ...filter,
-          selectedBranches: effectiveBranches,
-          selectedTags: filter.selectedTags || [],
-          tags: filter.tags || state.selectedFilter.tags,
-          appliedAt: Date.now(),
-        },
+      // Mevcut tab'ın filter'ını al
+      const activeTab = useTabStore.getState().activeTab;
+      const currentTabFilter = useTabStore.getState().getTabFilter(activeTab);
+      
+      const newFilter = {
+        ...filter,
+        selectedBranches: effectiveBranches,
+        selectedTags: filter.selectedTags || [],
+        tags: filter.tags || state.selectedFilter.tags,
+        appliedAt: Date.now(),
+        selectedDateRange: currentTabFilter?.selectedDateRange || 'today'
       };
 
       // Tab store'u güncelle
-      if (useTabStore.getState().activeTab) {
-        useTabStore.getState().setTabFilter(useTabStore.getState().activeTab, newState.selectedFilter);
+      if (activeTab) {
+        useTabStore.getState().setTabFilter(activeTab, newFilter);
       }
 
-      return newState;
+      return {
+        selectedFilter: newFilter
+      };
     }),
   setBranchs: (branchs: Efr_Branches[]) =>
     set((state) => ({
