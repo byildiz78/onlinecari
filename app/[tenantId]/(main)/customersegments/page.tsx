@@ -20,7 +20,7 @@ import { DetailedStatementModal } from './components/modals/DetailedStatementMod
 // Veri
 import { customers } from './data/mock-data'
 
-export default function CustomerListPage() {
+export default function CustomerSegmentsPage() {
     const { selectedFilter } = useFilterStore()
     const { addTab,setActiveTab } = useTabStore()
     const [searchTerm, setSearchTerm] = useState('')
@@ -126,10 +126,10 @@ export default function CustomerListPage() {
     }
 
     const handleNewCustomer = () => {
-        const tabId = "Yeni Müşteri";
+        const tabId = "Yeni Müşteri Segmenti";
         addTab({
             id: tabId,
-            title: "Yeni Müşteri",
+            title: "Yeni Müşteri Segmenti",
             lazyComponent: () => import('./components/CreateCustomer').then(module => ({
                 default: (props: any) => <module.default {...props} />
             }))
