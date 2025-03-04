@@ -1,14 +1,17 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
+import { CustomLoader } from "@/components/ui/custom-loader"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { formatDate } from "date-fns"
 import { Calendar, FileText, User, CreditCard, Wallet } from "lucide-react"
 
 interface CollectionTableProps {
     paginatedTransactions: any[]
+    isLoading: boolean
 }
 
-export function CollectionTable({ paginatedTransactions }: CollectionTableProps) {
+export function CollectionTable({ paginatedTransactions, isLoading }: CollectionTableProps) {
     return (
         <Card className="border-0 shadow-xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-1 overflow-hidden rounded-xl">
             <div className="rounded-xl border border-gray-100 dark:border-gray-800 h-full flex flex-col">
@@ -39,8 +42,8 @@ export function CollectionTable({ paginatedTransactions }: CollectionTableProps)
                                         Müşteri Adı
                                     </div>
                                 </TableHead>
-                                <TableHead className="w-[15%] text-right">
-                                    <div className="flex items-center justify-end gap-2">
+                                <TableHead className="w-[15%] text-center">
+                                    <div className="flex items-center justify-center gap-2">
                                         <span className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
                                             <Wallet className="h-4 w-4 text-green-600 dark:text-green-400" />
                                         </span>
@@ -66,7 +69,16 @@ export function CollectionTable({ paginatedTransactions }: CollectionTableProps)
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedTransactions.length === 0 ? (
+                        {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="h-[400px]">
+                                        <CustomLoader
+                                            message="Yükleniyor"
+                                            description="Müşteri verileri hazırlanıyor..."
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ) : paginatedTransactions.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
                                         Gösterilecek işlem bulunamadı
@@ -79,21 +91,21 @@ export function CollectionTable({ paginatedTransactions }: CollectionTableProps)
                                         className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
                                     >
                                         <TableCell>
-                                            <div className="font-medium">{transaction.date}</div>
+                                            <div className="font-medium">{formatDate(transaction.Date,"dd/MM/yyyy HH:mm")}</div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{transaction.customerName}</div>
+                                            <div className="font-medium">{transaction.CustomerName}</div>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-center">
                                             <div className="font-medium text-green-600 dark:text-green-400">
-                                                {transaction.amount}
+                                                {transaction.Credit}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{transaction.transactionType}</div>
+                                            <div className="font-medium">{transaction.SaleType}</div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{transaction.paymentType}</div>
+                                            <div className="font-medium">{transaction.PaymentType ?? "Boş"}</div>
                                         </TableCell>
                                     </TableRow>
                                 ))

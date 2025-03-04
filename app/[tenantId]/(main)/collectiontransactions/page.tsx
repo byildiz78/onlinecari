@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useFilterStore } from "@/stores/filters-store"
 import { useTabStore } from '@/stores/tab-store'
 
@@ -12,6 +12,9 @@ import { CollectionPagination } from './components/CollectionPagination'
 
 // Veri
 import { mockCollectionTransactions } from './data/mock-data'
+import { useCollectionTransactionsStore } from "@/stores/main/collection-transactions-store"
+import axios from "@/lib/axios"
+import { toast } from "@/components/ui/toast/use-toast"
 
 export default function CollectionTransactionsPage() {
     const { selectedFilter } = useFilterStore()
@@ -19,13 +22,47 @@ export default function CollectionTransactionsPage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const itemsPerPage = 10
+    const [isLoading, setIsLoading] = useState(true);
+    const latestFilter = useTabStore.getState().getTabFilter(activeTab);
+    const { collectionTransactions, setCollectionTransactions, selectedCollectionTransaction, setSelectedCollectionTransaction } = useCollectionTransactionsStore();
+
+    
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                setIsLoading(true);
+                  const response = await axios.post(
+                    "/api/main/collectiontransactions/collection_transactions_customers",
+                    {
+                        date1: latestFilter?.date?.from,
+                        date2: latestFilter?.date?.to,
+                    },
+                    {
+                        headers: { "Content-Type": "application/json" },
+                    }
+                )
+                setCollectionTransactions(response.data);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                toast({
+                    title: "Hata!",
+                    description: "Kullanıcılar yüklenirken bir hata oluştu.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, [selectedFilter,setCollectionTransactions]);
 
     // Verileri filtrele
-    const filteredTransactions = mockCollectionTransactions.filter(transaction => {
+    const filteredTransactions = collectionTransactions.filter(transaction => {
         const matchesSearch = 
-            transaction.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            transaction.transactionType.toLowerCase().includes(searchTerm.toLowerCase())
-
+            transaction.CustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            transaction.SaleType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            transaction.PaymentType.toLowerCase().includes(searchTerm.toLowerCase())
         return matchesSearch
     })
 
@@ -51,6 +88,7 @@ export default function CollectionTransactionsPage() {
             <div className="flex flex-col flex-1 overflow-hidden">
                 <CollectionTable 
                     paginatedTransactions={paginatedTransactions}
+                    isLoading={isLoading}
                 />
                 
                 <CollectionPagination 

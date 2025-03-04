@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { useRouter, usePathname } from "next/navigation";
-import { LockKeyhole, User, Loader2, ShieldCheck, BarChart3, Globe2, Sun, Moon, Eye, EyeOff, Mail } from "lucide-react";
+import { LockKeyhole, User, Loader2, ShieldCheck, BarChart3, Globe2, Sun, Moon, Eye, EyeOff, Mail, Currency, LucideCurrency, HandCoins } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -207,20 +207,20 @@ export default function LoginPage() {
     const features = [
         {
             icon: BarChart3,
-            title: "Gerçek Zamanlı Analitik",
-            description: "Anlık veri analizi ve raporlama",
+            title: "Cari Hesap Takibi",
+            description: "Anlık borç ve alacak takibi",
             gradient: "from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700"
         },
         {
             icon: ShieldCheck,
-            title: "Güvenli Altyapı",
-            description: "End-to-end şifrelenmiş veri güvenliği",
+            title: "Güvenli İşlemler",
+            description: "Güvenli finansal veri yönetimi",
             gradient: "from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700"
         },
         {
             icon: Globe2,
-            title: "Global Erişim",
-            description: "Her yerden güvenli erişim imkanı",
+            title: "Her Yerden Erişim",
+            description: "Tüm cihazlardan kolay erişim",
             gradient: "from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700"
         },
     ];
@@ -314,16 +314,15 @@ export default function LoginPage() {
                                 <div className="relative flex flex-col items-center gap-2 bg-white/5 backdrop-blur-sm p-3 rounded-lg">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 rounded-xl bg-white/5 ring-2 ring-white/20 shadow-[0_4px_8px_rgba(0,0,0,0.8)] hover:shadow-[0_6px_12px_rgba(0,0,0,0.8)] transition-all duration-300">
-                                            <BarChart3 className="h-7 w-7 text-white drop-shadow-[0_4px_4px_rgba(0,0,0,1)] [filter:_drop-shadow(0_0_4px_rgba(255,255,255,0.4))]" />
+                                            <HandCoins className="h-7 w-7 text-white drop-shadow-[0_4px_4px_rgba(0,0,0,1)] [filter:_drop-shadow(0_0_4px_rgba(255,255,255,0.4))]" />
                                         </div>
                                         <h2 className="text-2xl sm:text-3xl font-semibold text-white drop-shadow-[0_4px_4px_rgba(0,0,0,1)] dark:text-white dark:drop-shadow-[0_4px_4px_rgba(0,0,0,1)] [text-shadow:_2px_2px_0_rgb(0_0_0_/_40%)]">
                                             {process.env.NEXT_PUBLIC_APP_NAME}
                                         </h2>
                                     </div>
                                     <p className="text-lg text-white/90 text-center font-medium md:block hidden">
-                                        Veri odaklı kararlar için güçlü analitik platformu
+                                        Kolay ve hızlı online müşteri hesap yönetimi
                                     </p>
-                                   
                                 </div>
                             </div>
                         </div>
