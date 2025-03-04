@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { CustomLoader } from "@/components/ui/custom-loader"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -39,6 +40,7 @@ interface CustomerTableProps {
     onViewCollectionModal: (customer: any) => void;
     onViewStatement: (customer: any) => void;
     onViewDetailedStatement: (customer: any) => void;
+    isLoading: boolean;
 }
 
 export function CustomerTable({
@@ -46,7 +48,8 @@ export function CustomerTable({
     onViewSaleModal,
     onViewCollectionModal,
     onViewStatement,
-    onViewDetailedStatement
+    onViewDetailedStatement,
+    isLoading
 }: CustomerTableProps) {
     return (
         <div className="flex-1 overflow-auto
@@ -105,7 +108,7 @@ export function CustomerTable({
                                 <span className="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center">
                                     <Star className="h-4 w-4 text-pink-600 dark:text-pink-400" />
                                 </span>
-                                Limit
+                                Alacak
                             </div>
                         </TableHead>
                         <TableHead className="w-[10%] text-right">
@@ -127,75 +130,95 @@ export function CustomerTable({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {customers.map((customer) => (
-                        <TableRow
-                            key={customer.id}
-                            className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
-                        >
-                            <TableCell>
-                                <div className="font-medium">{customer.cardNo}</div>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                    {customer.cardType}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <div className="font-medium">{customer.name}</div>
-                            </TableCell>
-                            <TableCell>
-                                <div className="font-medium">{customer.branch}</div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <div className={cn(
-                                    "font-medium",
-                                    customer.balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
-                                )}>
-                                    {formatCurrency(customer.balance)}
-                                </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <div className="font-medium text-blue-600 dark:text-blue-400">
-                                    {formatCurrency(customer.credit)}
-                                </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <div className="font-medium text-red-600 dark:text-red-400">
-                                    {formatCurrency(customer.debt)}
-                                </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                        >
-                                            <MoreHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-52">
-                                        <DropdownMenuItem onClick={() => onViewSaleModal(customer)}>
-                                            <ShoppingCart className="h-4 w-4 mr-2 text-green-600" /> Satış Girişi
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onViewCollectionModal(customer)}>
-                                            <Receipt className="h-4 w-4 mr-2 text-blue-600" /> Tahsilat Girişi
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onViewStatement(customer)}>
-                                            <FileText className="h-4 w-4 mr-2 text-purple-600" /> Ekstre
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onViewDetailedStatement(customer)}>
-                                            <FileSpreadsheet className="h-4 w-4 mr-2 text-amber-600" /> Detaylı Ekstre
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            <Eye className="h-4 w-4 mr-2 text-indigo-600" /> Detayları Görüntüle
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                    {isLoading ? (
+                        <TableRow>
+                            <TableCell colSpan={8} className="h-[400px]">
+                                <CustomLoader 
+                                    message="Yükleniyor"
+                                    description="Müşteri verileri hazırlanıyor..."
+                                />
                             </TableCell>
                         </TableRow>
-                    ))}
+                    ) : customers?.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={8} className="h-[400px] text-center">
+                                <div className="flex flex-col items-center justify-center h-full">
+                                    <div className="text-lg font-medium text-gray-600 dark:text-gray-300">Veri Bulunamadı</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">Henüz müşteri kaydı bulunmamaktadır.</div>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        customers?.map((customer) => (
+                            <TableRow
+                                key={customer.customerId}
+                                className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                            >
+                                <TableCell>
+                                    <div className="font-medium">{customer.CardNumber}</div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800">
+                                        {customer.CardType ? customer.CardType : `Belirtilmemiş`}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="font-medium">{customer.CustomerName}</div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="font-medium"> Sorulacak</div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <div className={cn(
+                                        "font-medium",
+                                        customer.balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                                    )}>
+                                        {formatCurrency(customer.TotalBonusRemaing)}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <div className="font-medium text-blue-600 dark:text-blue-400">
+                                        {formatCurrency(customer.TotalBonusEarned)}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <div className="font-medium text-red-600 dark:text-red-400">
+                                        {formatCurrency(customer.TotalBonusUsed)}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            >
+                                                <MoreHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-52">
+                                            <DropdownMenuItem onClick={() => onViewSaleModal(customer)}>
+                                                <ShoppingCart className="h-4 w-4 mr-2 text-green-600" /> Satış Girişi
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => onViewCollectionModal(customer)}>
+                                                <Receipt className="h-4 w-4 mr-2 text-blue-600" /> Tahsilat Girişi
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => onViewStatement(customer)}>
+                                                <FileText className="h-4 w-4 mr-2 text-purple-600" /> Ekstre
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => onViewDetailedStatement(customer)}>
+                                                <FileSpreadsheet className="h-4 w-4 mr-2 text-amber-600" /> Detaylı Ekstre
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem>
+                                                <Eye className="h-4 w-4 mr-2 text-indigo-600" /> Detayları Görüntüle
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    )}
                 </TableBody>
             </Table>
         </div>

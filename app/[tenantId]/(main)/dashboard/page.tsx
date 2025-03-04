@@ -1,24 +1,56 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { WebWidget, WebWidgetData } from "@/types/tables";
 import { useFilterStore } from "@/stores/filters-store";
 import { useSettingsStore } from "@/stores/settings-store";
+import NotificationPanel from "@/app/[tenantId]/(main)/dashboard/components/NotificationPanel";
+import { ArrowDownRight, ArrowUpRight, ChevronRight, CreditCard, Receipt, Store, TrendingUp, Users, Wallet, } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useTabStore } from "@/stores/tab-store";
 import { useUserStore } from "@/stores/users-store";
-import { motion } from "framer-motion";
-import { Bell, Store, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, Users, TrendingUp, Receipt, ChevronRight } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+import axios from "@/lib/axios";
 import { Card } from "@/components/ui/card";
 import { TrendsChart } from "./components/TrendsChart";
-import NotificationPanel from "@/app/[tenantId]/(main)/dashboard/components/NotificationPanel";
-
-const REFRESH_INTERVAL = 90000; // 90 seconds
+const REFRESH_INTERVAL = 90000; // 90 seconds in milliseconds
 
 interface Settings {
     minDiscountAmount: number;
     minCancelAmount: number;
     minSaleAmount: number;
+}
+
+// Define interfaces for the dashboard data
+interface TopDebtor {
+    Müşteri: string;
+    Borç: number;
+}
+
+interface DashboardData {
+    topDebtors: TopDebtor[];
+    totalCollection: {
+        'Toplam Tahsilat': string;
+        'Değişim (Bu Ay)': string;
+    };
+    currentMonthCollection: {
+        'Bu Ay Tahsilat': string;
+        'Değişim (Bu Ay)': string;
+    };
+    totalSales: {
+        'Toplam Satış': string;
+        'Değişim (Bu Ay)': string;
+    };
+    currentMonthSales: {
+        'Bu Ay Satış': string;
+        'Değişim (Bu Ay)': string;
+    };
+    sixMonthStats: {
+        'Ay': string;
+        'Tahsilat': string;
+        'Satış': string;
+        'Tahsilat Değişim': string;
+        'Satış Değişim': string;
+    }[];
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -34,27 +66,12 @@ export default function Dashboard() {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const { settings } = useSettingsStore();
     const { selectedFilter } = useFilterStore();
-    const { fetchUsers } = useUserStore();
-
-    // Mock data for financial widgets
-    const mockData = {
-        totalCollections: "₺174,035.35",
-        totalExpenses: "₺162,539.06",
-        monthlyCollections: "₺45,447.25",
-        monthlyExpenses: "₺44,419.46",
-        activeCustomers: "1,245",
-        averageTransaction: "₺1,425.99",
-        topDebtors: [
-            { name: "PERS-HATİCE ÖZER", amount: "₺5,466.35" },
-            { name: "AYEDAŞ - CARİ", amount: "₺1,881.00" },
-            { name: "ASTRA ZENECA İLAÇ", amount: "₺538.00" }
-        ],
-        trends: {
-            labels: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran'],
-            collections: [45000, 52000, 49000, 47000, 45000, 48000],
-            sales: [42000, 48000, 45000, 43000, 41000, 44000]
-        }
-    };
+    const { users, fetchUsers } = useUserStore();
+    const pathname = usePathname();
+    const currentDate = new Date().toISOString().split('T')[0];
+    const [widgets, setWidgets] = useState<WebWidget[]>([]);
+    const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (selectedFilter.branches) {
@@ -68,6 +85,39 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (activeTab === "dashboard") {
+            const fetchWidgetsData = async () => {
+                try {
+                    const response = await axios.get<WebWidget[]>("/api/webwidgets", {
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    setWidgets(response.data);
+                } catch (error) {
+                    console.error("Error fetching initial data:", error);
+                }
+            };
+
+            fetchWidgetsData();
+
+            const fetchDashboardData = async () => {
+                try {
+                    setLoading(true);
+                    const response = await axios.post<DashboardData>("/api/widgetreport", {
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    setDashboardData(response.data);
+                } catch (error) {
+                    console.error("Error fetching dashboard data:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            fetchDashboardData();
+
             const countdownInterval = setInterval(() => {
                 setCountdown((prevCount) => {
                     if (prevCount <= 1) {
@@ -81,6 +131,44 @@ export default function Dashboard() {
             return () => clearInterval(countdownInterval);
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        if (activeTab === "dashboard") {
+            const fetchData = async () => {
+                try {
+                    const response = await axios.get<WebWidget[]>("/api/webwidgets", {
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    setWidgets(response.data);
+                } catch (error) {
+                    console.error("Error refreshing data:", error);
+                }
+            };
+
+            const fetchDashboardData = async () => {
+                try {
+                    setLoading(true);
+                    const response = await axios.post<DashboardData>("/api/widgetreport", {
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    setDashboardData(response.data);
+                } catch (error) {
+                    console.error("Error refreshing dashboard data:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            if (refreshTrigger > 0) {
+                fetchData();
+                fetchDashboardData();
+            }
+        }
+    }, [refreshTrigger, activeTab]);
 
     return (
         <div className="h-full flex">
@@ -123,6 +211,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="p-3 space-y-4 md:space-y-6 pb-20">
+                  
                     {/* Summary Widgets */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Total Collections */}
@@ -133,10 +222,10 @@ export default function Dashboard() {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Toplam Tahsilat</p>
-                                        <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{mockData.totalCollections}</h3>
+                                        <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{dashboardData?.totalCollection['Toplam Tahsilat'] ?? ''}</h3>
                                         <div className="flex items-center gap-1 mt-2 text-sm text-green-600/80 dark:text-green-400/80">
                                             <ArrowUpRight className="h-4 w-4" />
-                                            <span>+12.5%</span>
+                                            <span>{dashboardData?.totalCollection['Değişim (Bu Ay)'] || '0%'}</span>
                                             <span className="text-gray-600/60 dark:text-gray-400/60">bu ay</span>
                                         </div>
                                     </div>
@@ -155,10 +244,10 @@ export default function Dashboard() {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Toplam Harcama</p>
-                                        <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{mockData.totalExpenses}</h3>
+                                        <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{dashboardData?.totalSales['Toplam Satış'] ?? ''}</h3>
                                         <div className="flex items-center gap-1 mt-2 text-sm text-red-600/80 dark:text-red-400/80">
                                             <ArrowDownRight className="h-4 w-4" />
-                                            <span>-8.3%</span>
+                                            <span>{dashboardData?.totalSales['Değişim (Bu Ay)'] || '0%'}</span>
                                             <span className="text-gray-600/60 dark:text-gray-400/60">bu ay</span>
                                         </div>
                                     </div>
@@ -177,10 +266,10 @@ export default function Dashboard() {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Bu Ay Tahsilat</p>
-                                        <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{mockData.monthlyCollections}</h3>
+                                        <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{dashboardData?.currentMonthCollection['Bu Ay Tahsilat'] ?? ''}</h3>
                                         <div className="flex items-center gap-1 mt-2 text-sm text-blue-600/80 dark:text-blue-400/80">
                                             <ArrowUpRight className="h-4 w-4" />
-                                            <span>+5.2%</span>
+                                            <span>{dashboardData?.currentMonthCollection['Değişim (Bu Ay)'] || '0%'}</span>
                                             <span className="text-gray-600/60 dark:text-gray-400/60">geçen aya göre</span>
                                         </div>
                                     </div>
@@ -199,10 +288,10 @@ export default function Dashboard() {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Bu Ay Harcama</p>
-                                        <h3 className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{mockData.monthlyExpenses}</h3>
+                                        <h3 className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{dashboardData?.currentMonthSales['Bu Ay Satış'] ?? ''}</h3>
                                         <div className="flex items-center gap-1 mt-2 text-sm text-purple-600/80 dark:text-purple-400/80">
                                             <ArrowDownRight className="h-4 w-4" />
-                                            <span>-3.1%</span>
+                                            <span>{dashboardData?.currentMonthSales['Değişim (Bu Ay)'] || '0%'}</span>
                                             <span className="text-gray-600/60 dark:text-gray-400/60">geçen aya göre</span>
                                         </div>
                                     </div>
@@ -217,14 +306,14 @@ export default function Dashboard() {
                     {/* Trends Chart */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div className="lg:col-span-2">
-                            <TrendsChart data={mockData.trends} />
+                            <TrendsChart data={dashboardData?.sixMonthStats ?? []} />
                         </div>
 
                         {/* Top Debtors Card */}
                         <Card className="relative overflow-hidden group hover:shadow-xl transition-all duration-300">
                             <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20" />
                             <div className="absolute inset-0 bg-grid-black/5 [mask-image:linear-gradient(0deg,transparent,black)] dark:bg-grid-white/5" />
-                            <div className="p-6 relative">
+                            <div className="p-6 relative h-[400px] flex flex-col">
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <h3 className="text-lg font-semibold text-pink-700 dark:text-pink-400">En Yüksek Borçlular</h3>
@@ -236,8 +325,15 @@ export default function Dashboard() {
                                         <Users className="w-6 h-6 text-pink-600 dark:text-pink-400" />
                                     </div>
                                 </div>
-                                <div className="space-y-4">
-                                    {mockData.topDebtors.map((debtor, index) => (
+                                <div className="space-y-4 overflow-y-auto flex-1
+                                    [&::-webkit-scrollbar]:w-2
+                                    [&::-webkit-scrollbar-thumb]:bg-gray-300/50
+                                    [&::-webkit-scrollbar-thumb]:rounded-full
+                                    [&::-webkit-scrollbar-track]:bg-transparent
+                                    dark:[&::-webkit-scrollbar-thumb]:bg-gray-700/50
+                                    hover:[&::-webkit-scrollbar-thumb]:bg-gray-300/80
+                                    dark:hover:[&::-webkit-scrollbar-thumb]:bg-gray-700/80">
+                                    {dashboardData?.topDebtors.map((debtor, index) => (
                                         <div
                                             key={index}
                                             className="flex items-center justify-between p-4 rounded-lg bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm border border-pink-100/20 dark:border-pink-900/20 hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors"
@@ -249,12 +345,12 @@ export default function Dashboard() {
                                                     </span>
                                                 </div>
                                                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                    {debtor.name}
+                                                    {debtor.Müşteri}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-semibold text-pink-600 dark:text-pink-400">
-                                                    {debtor.amount}
+                                                    {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(debtor.Borç)}
                                                 </span>
                                                 <ChevronRight className="w-4 h-4 text-gray-400" />
                                             </div>
@@ -278,33 +374,9 @@ export default function Dashboard() {
                         hover:[&::-webkit-scrollbar-thumb]:bg-gray-300/80
                         dark:hover:[&::-webkit-scrollbar-thumb]:bg-gray-700/80">
                     <NotificationPanel
-                        settings={settings}
                         refreshTrigger={refreshTrigger}
                     />
                 </div>
-            </div>
-
-            {/* Mobile Notifications Button */}
-            <div className="fixed bottom-4 right-4 lg:hidden z-40">
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <Button size="icon" className="rounded-full h-12 w-12">
-                            <div className="relative">
-                                <Bell className="h-5 w-5" />
-                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-                            </div>
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent
-                        side="right"
-                        className="w-[90%] max-w-[400px] p-0 sm:w-[400px]"
-                    >
-                        <NotificationPanel
-                            settings={settings}
-                            refreshTrigger={refreshTrigger}
-                        />
-                    </SheetContent>
-                </Sheet>
             </div>
         </div>
     );

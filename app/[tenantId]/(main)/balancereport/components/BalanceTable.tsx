@@ -4,12 +4,14 @@ import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Phone, Calendar, Wallet, CreditCard } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { CustomLoader } from "@/components/ui/custom-loader"
 
 interface BalanceTableProps {
     paginatedBalances: any[]
+    isLoading: boolean;
 }
 
-export function BalanceTable({ paginatedBalances }: BalanceTableProps) {
+export function BalanceTable({ paginatedBalances, isLoading }: BalanceTableProps) {
     return (
         <Card className="border-0 shadow-xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-1 overflow-hidden rounded-xl">
             <div className="rounded-xl border border-gray-100 dark:border-gray-800 h-full flex flex-col">
@@ -91,7 +93,16 @@ export function BalanceTable({ paginatedBalances }: BalanceTableProps) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedBalances.length === 0 ? (
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="h-[400px]">
+                                        <CustomLoader
+                                            message="Yükleniyor"
+                                            description="Müşteri verileri hazırlanıyor..."
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ) : paginatedBalances.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                                         Gösterilecek kayıt bulunamadı
@@ -104,41 +115,41 @@ export function BalanceTable({ paginatedBalances }: BalanceTableProps) {
                                         className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
                                     >
                                         <TableCell>
-                                            <div className="font-medium">{balance.customer}</div>
+                                            <div className="font-medium">{balance.CustomerName}</div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{balance.phone}</div>
+                                            <div className="font-medium">{balance.PhoneNumber}</div>
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="font-medium">{balance.startDate}</div>
+                                        <TableCell className="text-center">
+                                            <div className="font-medium">{balance.StartingBalance ?? 0}</div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="font-medium text-red-600 dark:text-red-400">
-                                                {balance.debt}
+                                                {balance.Debt}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="font-medium text-green-600 dark:text-green-400">
-                                                {balance.credit}
+                                                {balance.Credit}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className={cn(
                                                 "font-medium",
-                                                parseFloat(balance.balance.replace(/,/g, '')) < 0 
-                                                    ? "text-red-600 dark:text-red-400" 
+                                                parseFloat(balance?.balance?.replace(/,/g, '')) < 0
+                                                    ? "text-red-600 dark:text-red-400"
                                                     : "text-green-600 dark:text-green-400"
                                             )}>
-                                                {balance.balance}
+                                                {balance.Balance}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <div className="font-medium">
-                                                {balance.lastTransactionDate}
+                                                {balance.LastTransactionTime}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{balance.cardType}</div>
+                                            <div className="font-medium">{balance.CardType ? balance.CardType : "Belirtilmemiş"}</div>
                                         </TableCell>
                                     </TableRow>
                                 ))

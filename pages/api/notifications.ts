@@ -1,73 +1,61 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Dataset } from '@/lib/dataset';
-import { mockData } from '@/lib/mock-data';
+import { extractTenantId } from '@/lib/utils';
 
 interface Notification {
-   autoId: number;
-   branchName: string;
-   formName: string;
-   orderDateTime: string;
-   type: string;
+   Debit: number;
+   BranchName: number;
+   CustomerName: string;
+   Date: string;
+   CheckNo: number;
+   SaleType?: string;
 }
 
 export default async function handler(
    req: NextApiRequest,
    res: NextApiResponse
 ) {
-   if (req.method !== 'POST') {
+   if (req.method !== 'GET') {
        return res.status(405).json({ error: 'Method not allowed' });
    }
 
    try {
-       const { branches } = req.body;
-       const auditQuery = `
-       SELECT TOP 10
-           wb.AuditID as autoId,
-           wb.BranchName as branchName,
-           we.FormName as formName,
-           wb.AuditDate as orderDateTime,
-           '1' as type
-       FROM 
-           webBranchAuditRecords wb WITH (NOLOCK)
-           INNER JOIN webBranchAuditForms we WITH (NOLOCK) on wb.FormID = we.AutoID
-       WHERE 
-           wb.AuditDate >= DATEADD(HOUR, -24, GETDATE())
-           AND wb.@BranchID
-       ORDER BY 
-           wb.AuditDate DESC`;
+    
+    const tenantId = extractTenantId(req.headers.referer);
+    const auditQuery = `
+        SELECT TOP 10 
+        t.AddDateTime AS [Date],
+        cf.CustomerName AS [CustomerName],
+        t.CustomField1 AS [CheckNo],
+        ROUND(t.BonusUsed, 2) AS [Debit],
+        cf.BranchID AS [BranchName],
+        CASE
+            WHEN EXISTS (
+            SELECT 1 FROM [${tenantId}].bonus_orderpayments p WITH (NOLOCK) WHERE p.OrderKey = t.OrderKey AND (p.IsAccountSale = 1 OR p.PaymentMethodName = 'ONLİNE CARİ')) THEN 'Sale' 
+            WHEN EXISTS (SELECT 1 FROM [${tenantId}].bonus_orderpayments p WITH (NOLOCK) WHERE p.OrderKey = t.OrderKey AND p.IsAccountPayment = 1) THEN 'Collection' 
+            ELSE 'Other' END AS SaleType 
+            FROM
+            [${tenantId}].bonus_transactions AS t WITH (NOLOCK)
+            INNER JOIN [${tenantId}].bonus_customerfiles AS cf WITH (NOLOCK) ON cf.CustomerKey = t.CustomerKey 
+            WHERE 1=1
+            AND BonusUsed <> 0 AND BonusUsed IS NOT NULL 
+        ORDER BY
+            t.AddDateTime DESC;
+        `;
 
        const instance = Dataset.getInstance();
 
        try {
-           const [cancelResults] = await Promise.all([
-               instance.executeQuery<Notification[]>({
+           const response = await instance.executeQuery<Notification[]>({
                    query: auditQuery,
-                   parameters: {
-                       BranchID: branches,
-                   },
                    req
-               }),
-           ]);
+            });
 
-           const formatResults = (results: any[]) => results.map(result => ({
-               autoId: result.autoId,
-               branchName: result.branchName,
-               formName: result.formName,
-               orderDateTime: result.orderDateTime,
-               type: result.type
-           }));
-
-           const combinedResults = [
-               ...formatResults(cancelResults),
-           ].sort((a, b) => new Date(b.orderDateTime).getTime() - new Date(a.orderDateTime).getTime());
-
-           return res.status(200).json(combinedResults);
+           return res.status(200).json(response);
        } catch (error) {
            console.warn('Database query failed, using mock data');
-           return res.status(200).json(mockData.notifications);
        }
    } catch (error: any) {
        console.warn('Using mock data due to error:', error);
-       return res.status(200).json(mockData.notifications);
    }
 }

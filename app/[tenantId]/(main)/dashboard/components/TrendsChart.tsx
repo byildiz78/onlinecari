@@ -23,21 +23,32 @@ ChartJS.register(
   Filler
 );
 
+interface MonthStat {
+  'Ay': string;
+  'Tahsilat': string;
+  'Satış': string;
+  'Tahsilat Değişim': string;
+  'Satış Değişim': string;
+}
+
 interface TrendsChartProps {
-  data: {
-    labels: string[];
-    collections: number[];
-    sales: number[];
-  };
+  data: MonthStat[];
 }
 
 export function TrendsChart({ data }: TrendsChartProps) {
+  // Parse the currency strings to numbers
+  const parseAmount = (amount: string): number => {
+    if (!amount) return 0;
+    // Remove currency symbol, dots as thousand separators, and replace comma with dot for decimal
+    return parseFloat(amount.replace(/[^\d,-]/g, '').replace(',', '.'));
+  };
+
   const chartData = {
-    labels: data.labels,
+    labels: data.map(item => item.Ay),
     datasets: [
       {
         label: 'Tahsilat',
-        data: data.collections,
+        data: data.map(item => parseAmount(item.Tahsilat)),
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
@@ -50,7 +61,7 @@ export function TrendsChart({ data }: TrendsChartProps) {
       },
       {
         label: 'Satış',
-        data: data.sales,
+        data: data.map(item => parseAmount(item.Satış)),
         borderColor: 'rgb(34, 197, 94)',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         fill: true,
@@ -122,9 +133,9 @@ export function TrendsChart({ data }: TrendsChartProps) {
         }
       },
       y: {
-        beginAtZero: true,
         grid: {
-          color: '#e5e7eb',
+          color: 'rgba(226, 232, 240, 0.5)',
+          drawBorder: false
         },
         ticks: {
           font: {
@@ -143,17 +154,21 @@ export function TrendsChart({ data }: TrendsChartProps) {
   };
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-900/50 shadow-xl shadow-gray-200/40 dark:shadow-gray-900/40 border border-gray-200/60 dark:border-gray-800/60">
-      <div className="flex flex-col gap-1 mb-4">
-        <h3 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
-          Tahsilat ve Satış Trendi
-        </h3>
-        <p className="text-[0.925rem] text-muted-foreground">
-          Son 6 aylık tahsilat ve satış karşılaştırması
-        </p>
-      </div>
-      <div className="h-[400px]">
-        <Line data={chartData} options={options} />
+    <Card className="relative overflow-hidden group hover:shadow-xl transition-all duration-300">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10" />
+      <div className="absolute inset-0 bg-grid-black/5 [mask-image:linear-gradient(0deg,transparent,black)] dark:bg-grid-white/5" />
+      <div className="p-6 relative">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Finansal Trendler</h3>
+            <p className="text-sm text-gray-600/70 dark:text-gray-400/70 mt-1">
+              Son 6 aylık tahsilat ve satış verileri
+            </p>
+          </div>
+        </div>
+        <div className="h-[300px]">
+          <Line data={chartData} options={options} />
+        </div>
       </div>
     </Card>
   );

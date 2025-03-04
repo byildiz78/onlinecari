@@ -11,7 +11,10 @@ import { BalanceTable } from './components/BalanceTable'
 import { BalancePagination } from './components/BalancePagination'
 
 // Veri
-import { mockBalanceData } from './data/mock-data'
+import React from "react"
+import axios from "@/lib/axios"
+import { toast } from "@/components/ui/toast/use-toast"
+import { useBalanceCustomersStore } from "@/stores/main/balance-customers-store"
 
 export default function BalanceReportPage() {
     const { selectedFilter } = useFilterStore()
@@ -19,12 +22,47 @@ export default function BalanceReportPage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const itemsPerPage = 10
+    const [isLoading, setIsLoading] = React.useState(true);
+    const { balanceCustomers, setBalanceCustomers, selectedBalanceCustomer, setSelectedBalanceCustomer } = useBalanceCustomersStore();
+    const latestFilter = useTabStore.getState().getTabFilter(activeTab);
+
+
+    // Verileri yükle
+    React.useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                setIsLoading(true);
+                  const response = await axios.post(
+                    "/api/main/balances/main_balance_customers",
+                    {
+                        date1: latestFilter?.date?.from,
+                        date2: latestFilter?.date?.to,
+                    },
+                    {
+                        headers: { "Content-Type": "application/json" },
+                    }
+                )
+                setBalanceCustomers(response.data);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                toast({
+                    title: "Hata!",
+                    description: "Kullanıcılar yüklenirken bir hata oluştu.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, [selectedFilter,setBalanceCustomers]);
 
     // Verileri filtrele
-    const filteredBalances = mockBalanceData.filter(balance => {
+    const filteredBalances = balanceCustomers.filter(balance => {
         const matchesSearch = 
-            balance.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            balance.phone.toLowerCase().includes(searchTerm.toLowerCase())
+            balance?.CustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            balance?.PhoneNumber.toLowerCase().includes(searchTerm.toLowerCase())
 
         return matchesSearch
     })
@@ -51,6 +89,7 @@ export default function BalanceReportPage() {
             <div className="flex flex-col flex-1 overflow-hidden">
                 <BalanceTable 
                     paginatedBalances={paginatedBalances}
+                    isLoading={isLoading}
                 />
                 
                 <BalancePagination 

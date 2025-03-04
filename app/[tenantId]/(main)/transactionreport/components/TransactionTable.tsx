@@ -1,15 +1,18 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
+import { CustomLoader } from "@/components/ui/custom-loader"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { cn } from "@/lib/utils"
+import { cn, formatDateTimeDMY } from "@/lib/utils"
+import { formatDate } from "date-fns"
 import { Calendar, FileText, User, Wallet } from "lucide-react"
 
 interface TransactionTableProps {
     paginatedTransactions: any[]
+    isLoading: boolean
 }
 
-export function TransactionTable({ paginatedTransactions }: TransactionTableProps) {
+export function TransactionTable({ paginatedTransactions, isLoading }: TransactionTableProps) {
     return (
         <Card className="border-0 shadow-xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-1 overflow-hidden rounded-xl">
             <div className="rounded-xl border border-gray-100 dark:border-gray-800 h-full flex flex-col">
@@ -40,24 +43,24 @@ export function TransactionTable({ paginatedTransactions }: TransactionTableProp
                                         Cari
                                     </div>
                                 </TableHead>
-                                <TableHead className="w-[15%] text-right">
-                                    <div className="flex items-center justify-end gap-2">
+                                <TableHead className="w-[15%] text-center">
+                                    <div className="flex items-center justify-center gap-2">
                                         <span className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
                                             <Wallet className="h-4 w-4 text-green-600 dark:text-green-400" />
                                         </span>
                                         Alacak
                                     </div>
                                 </TableHead>
-                                <TableHead className="w-[15%] text-right">
-                                    <div className="flex items-center justify-end gap-2">
+                                <TableHead className="w-[15%] text-center">
+                                    <div className="flex items-center justify-center gap-2">
                                         <span className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
                                             <Wallet className="h-4 w-4 text-red-600 dark:text-red-400" />
                                         </span>
                                         Borç
                                     </div>
                                 </TableHead>
-                                <TableHead className="w-[15%] text-right">
-                                    <div className="flex items-center justify-end gap-2">
+                                <TableHead className="w-[15%] text-center">
+                                    <div className="flex items-center justify-center gap-2">
                                         <span className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
                                             <Wallet className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                         </span>
@@ -75,7 +78,16 @@ export function TransactionTable({ paginatedTransactions }: TransactionTableProp
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedTransactions.length === 0 ? (
+                        {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="h-[400px]">
+                                        <CustomLoader
+                                            message="Yükleniyor"
+                                            description="Müşteri verileri hazırlanıyor..."
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ) : paginatedTransactions.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                                         Gösterilecek işlem bulunamadı
@@ -88,38 +100,38 @@ export function TransactionTable({ paginatedTransactions }: TransactionTableProp
                                         className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
                                     >
                                         <TableCell>
-                                            <div className="font-medium">{transaction.date}</div>
+                                            <div className="font-medium">{formatDate(transaction.Date,"dd/MM/yyyy HH:mm")}</div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{transaction.customer}</div>
+                                            <div className="font-medium">{transaction.CustomerName}</div>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-center">
                                             <div className={cn(
                                                 "font-medium",
                                                 parseFloat(transaction.credit) < 0 
                                                     ? "text-red-600 dark:text-red-400" 
                                                     : "text-green-600 dark:text-green-400"
                                             )}>
-                                                {transaction.credit}
+                                                {transaction.Credit ?? 0}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-center">
                                             <div className="font-medium text-red-600 dark:text-red-400">
-                                                {transaction.debt}
+                                                {transaction.Debit ?? 0}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-center">
                                             <div className={cn(
                                                 "font-medium",
                                                 parseFloat(transaction.balance) < 0 
                                                     ? "text-red-600 dark:text-red-400" 
                                                     : "text-green-600 dark:text-green-400"
                                             )}>
-                                                {transaction.balance}
+                                                {transaction.Balance ?? 0}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{transaction.documentNo}</div>
+                                            <div className="font-medium">{transaction.CheckNo ?? 0}</div>
                                         </TableCell>
                                     </TableRow>
                                 ))
