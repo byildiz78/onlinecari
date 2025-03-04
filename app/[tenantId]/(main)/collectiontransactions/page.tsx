@@ -44,11 +44,22 @@ export default function CollectionTransactionsPage() {
                 setCollectionTransactions(response.data);
             } catch (error) {
                 console.error('Error fetching users:', error);
-                toast({
-                    title: "Hata!",
-                    description: "Kullanıcılar yüklenirken bir hata oluştu.",
-                    variant: "destructive",
-                });
+                
+                // API'den 404 hatası geldiğinde (veri bulunamadı)
+                if (error.response && error.response.status === 404) {
+                    toast({
+                        title: "Bilgi",
+                        description: "Seçilen tarih aralığında herhangi bir tahsilat işlemi bulunamadı. Lütfen farklı bir tarih aralığı seçin.",
+                        variant: "default",
+                    });
+                } else {
+                    // Diğer hatalar için
+                    toast({
+                        title: "Hata!",
+                        description: "Tahsilat işlemleri verilerini alırken bir sorun oluştu. Lütfen tekrar deneyin.",
+                        variant: "destructive",
+                    });
+                }
             } finally {
                 setIsLoading(false);
             }

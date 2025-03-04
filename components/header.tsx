@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn, formatDateTimeDMYHI } from "@/lib/utils";
+import { Button } from "./ui/button";
+import { Calendar } from "./ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { cn, formatDateTimeDMYHI, formatDateTimeYMDHI } from "../lib/utils";
 import {
   Calendar as CalendarIcon,
   ChevronDown,
@@ -14,9 +14,10 @@ import {
   Settings,
   Trash2,
   CheckCircle2,
+  Filter,
   Workflow,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Command,
   CommandEmpty,
@@ -24,23 +25,25 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { useTheme } from "@/providers/theme-provider";
-import { useLanguage } from "@/providers/language-provider";
+} from "./ui/command";
+import { useTheme } from "../providers/theme-provider";
+import { useLanguage } from "../providers/language-provider";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+} from "./ui/select";
+import { useFilterStore } from "../stores/filters-store";
+import { SidebarTrigger } from "./ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "./ui/dropdown-menu";
 import { Checkbox } from "./ui/checkbox";
 import {
   addDays,
@@ -55,18 +58,16 @@ import {
   subWeeks,
   subYears,
 } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
-import "flag-icons/css/flag-icons.min.css";
-import { TimePicker } from "@/components/ui/time-picker";
-import { useTabStore } from "@/stores/tab-store";
+import { Efr_Branches } from "../types/tables";
+import { BranchProvider } from "../providers/branch-provider";
+import { TimePicker } from "./ui/time-picker";
+import { useTabStore } from "../stores/tab-store";
 import { useSettingsStore } from "@/stores/settings-store";
+import { toZonedTime } from "date-fns-tz";
 import { useTab } from "@/hooks/use-tab";
-import { useFilterStore } from "@/stores/filters-store";
+import { useBranchContext } from "../providers/branch-provider";
+import "flag-icons/css/flag-icons.min.css";
 import { TagProvider } from "@/providers/tag-provider";
-import { Efr_Branches } from "@/types/tables";
-import { BranchProvider } from "@/providers/branch-provider";
-
-
 
 const translations = {
   tr: {
@@ -153,24 +154,81 @@ const translations = {
     tags: "العلامات",
     branches: "الفروع",
   },
+  az: {
+    startDate: "Başlanğıc Tarixi",
+    endDate: "Bitmə Tarixi",
+    allBranches: "Bütün Filiallar",
+    branchesSelected: "Filial Seçildi",
+    searchBranch: "Filial axtar...",
+    branchNotFound: "Filial tapılmadı.",
+    apply: "Tətbiq et",
+    refresh: "Yenilə",
+    notifications: "Bildirişlər",
+    settings: "Parametrlər",
+    profile: "Profil",
+    time: "Saat",
+    dateRange: "Tarix Aralığı",
+    today: "Bu gün",
+    yesterday: "Dünən",
+    thisWeek: "Bu Həftə",
+    lastWeek: "Keçən Həftə",
+    thisMonth: "Bu Ay",
+    lastMonth: "Keçən Ay",
+    thisYear: "Bu İl",
+    clearSelected: "Seçimləri Təmizlə",
+    customRange: "Xüsusi Aralıq",
+    cancel: "Ləğv et",
+    functions: "Funksiyalar",
+    tags: "Etiketlər",
+    branches: "Filiallar",
+  },
+  ru: {
+    startDate: "Дата начала",
+    endDate: "Дата окончания",
+    allBranches: "Все филиалы",
+    branchesSelected: "Выбранные филиалы",
+    searchBranch: "Поиск филиала...",
+    branchNotFound: "Филиал не найден.",
+    apply: "Применить",
+    refresh: "Обновить",
+    notifications: "Уведомления",
+    settings: "Настройки",
+    profile: "Профиль",
+    time: "Время",
+    dateRange: "Диапазон дат",
+    today: "Сегодня",
+    yesterday: "Вчера",
+    thisWeek: "Эта неделя",
+    lastWeek: "Прошлая неделя",
+    thisMonth: "Этот месяц",
+    lastMonth: "Прошлый месяц",
+    thisYear: "Этот год",
+    clearSelected: "Очистить выбранное",
+    customRange: "Пользовательский диапазон",
+    cancel: "Отмена",
+    functions: "Функции",
+    tags: "Теги",
+    branches: "Филиалы",
+  }
 };
 
 export default function Header() {
-  const [desktopBranchOpen, setDesktopBranchOpen] = useState(false);
+  const [desktopBranchOpen, setDesktopBranchOpen] = React.useState(false);
   const { selectedFilter, setFilter, handleStartDateSelect, handleEndDateSelect, handleTagSelect } = useFilterStore();
   const { settings } = useSettingsStore();
-  const { activeTab } = useTabStore();
-  const [tempStartTime, setTempStartTime] = useState<string>("00:00");
-  const [tempEndTime, setTempEndTime] = useState<string>("23:59");
-  const [tempStartDate, setTempStartDate] = useState<Date | undefined>(selectedFilter.date.from);
-  const [tempEndDate, setTempEndDate] = useState<Date | undefined>(selectedFilter.date.to);
+  const tabStore = useTabStore();
+  const { activeTab } = tabStore;
+  const [tempStartTime, setTempStartTime] = React.useState<string>("00:00");
+  const [tempEndTime, setTempEndTime] = React.useState<string>("23:59");
+  const [tempStartDate, setTempStartDate] = React.useState<Date | undefined>(selectedFilter.date.from);
+  const [tempEndDate, setTempEndDate] = React.useState<Date | undefined>(selectedFilter.date.to);
   const { setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const t = translations[language as keyof typeof translations];
-  const [selectedDateRange, setSelectedDateRange] = useState("today");
-
-  const { handleTabOpen } = useTab();
-
+  const [selectedDateRange, setSelectedDateRange] = useState(() => {
+    const currentFilter = tabStore.getTabFilter(tabStore.activeTab);
+    return currentFilter?.selectedDateRange || "today";
+  });
 
   useEffect(() => {
     if (settings.length > 0) {
@@ -198,7 +256,7 @@ export default function Header() {
         const [endHours, endMinutes] = endTime.split(':').map(Number);
 
         const fromDate = new Date(new Date().setHours(startHours, startMinutes, 0));
-        const toDate = addDays(new Date().setHours(endHours, endMinutes, 0), 1);
+        const toDate = daystart !== 0 ? addDays(new Date().setHours(endHours, endMinutes, 0), 1) : addDays(new Date().setHours(endHours, endMinutes, 0), 0);
 
         if (tempStartDate) {
           const newTempStartDate = new Date(tempStartDate);
@@ -222,7 +280,17 @@ export default function Header() {
       }
     }
   }, [settings]);
-  const [pendingBranches, setPendingBranches] = useState(
+
+  useEffect(() => {
+    const currentFilter = tabStore.getTabFilter(tabStore.activeTab);
+    if (currentFilter?.selectedDateRange) {
+      setSelectedDateRange(currentFilter.selectedDateRange);
+      setTempStartDate(currentFilter.date.from);
+      setTempEndDate(currentFilter.date.to);
+    }
+  }, [tabStore.activeTab]);
+
+  const [pendingBranches, setPendingBranches] = React.useState(
     selectedFilter.selectedBranches
   );
 
@@ -231,77 +299,15 @@ export default function Header() {
     setTempEndDate(selectedFilter.date.to);
   }, [selectedFilter.date.from, selectedFilter.date.to, activeTab]);
 
-  const applyFilters = () => {
+  const memoizedPendingBranches = useMemo(() => pendingBranches, [pendingBranches]);
 
-    if (tempStartDate) {
-      const [hours, minutes] = tempStartTime.split(':');
-      const newStartDate = new Date(tempStartDate);
-      newStartDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      handleStartDateSelect(newStartDate);
-    }
-
-    if (tempEndDate) {
-      const [hours, minutes] = tempEndTime.split(':');
-      const newEndDate = new Date(tempEndDate);
-      newEndDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      handleEndDateSelect(newEndDate);
-    }
-
-    setFilter({
-      ...selectedFilter,
-      date: {
-        from: toZonedTime(tempStartDate || new Date(), 'Europe/Istanbul'),
-        to: toZonedTime(tempEndDate || new Date(), 'Europe/Istanbul')
-      },
-      selectedBranches: pendingBranches,
-    });
-
-
-  };
-
-  const clearSelectedBranches = () => {
-    setPendingBranches([]);
-    // Tag seçimini de kaldır ama henüz store'u güncelleme
-    selectedFilter.selectedTags = [];
-  };
-
-  const determineDateRange = (fromDate: Date, toDate: Date) => {
-    const daystart = parseInt(settings.find(setting => setting.Kod === "daystart")?.Value || '0');
-    let startTime = daystart === 0 ? "00:00" : `${daystart.toString().padStart(2, '0')}:00`;
-    let endTime = daystart === 0 ? "23:59" : `${((daystart - 1 + 24) % 24).toString().padStart(2, '0')}:59`;
-
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const today = new Date(new Date().setHours(startHours, startMinutes, 0));
-
-    // Bugün kontrolü
-    const isToday = fromDate.getDate() === today.getDate() &&
-      fromDate.getMonth() === today.getMonth() &&
-      fromDate.getFullYear() === today.getFullYear();
-
-    if (isToday) return "today";
-
-    // Dün kontrolü
-    const yesterday = subDays(today, 1);
-    const isYesterday = fromDate.getDate() === yesterday.getDate() &&
-      fromDate.getMonth() === yesterday.getMonth() &&
-      fromDate.getFullYear() === yesterday.getFullYear();
-
-    if (isYesterday) return "yesterday";
-
-    // Diğer tarih aralıkları için kontroller eklenebilir
-
-    return "custom";
-  };
-
-  useEffect(() => {
-    if (selectedFilter.date.from && selectedFilter.date.to) {
-      const newDateRange = determineDateRange(selectedFilter.date.from, selectedFilter.date.to);
-      setSelectedDateRange(newDateRange);
-    }
-  }, [selectedFilter.date.from, selectedFilter.date.to, activeTab]);
-
-  const dateRangeChange = (value: string) => {
+  const handleDateRangeChange = useCallback((value: string) => {
     setSelectedDateRange(value);
+    const currentFilter = tabStore.getTabFilter(tabStore.activeTab);
+    tabStore.setTabFilter(tabStore.activeTab, {
+      ...currentFilter,
+      selectedDateRange: value
+    });
     const daystart = parseInt(settings.find(setting => setting.Kod === "daystart")?.Value || '0');
     let startTime: string;
     let endTime: string;
@@ -320,75 +326,136 @@ export default function Header() {
     const [endHours, endMinutes] = endTime.split(':').map(Number);
 
     const today = new Date(new Date().setHours(startHours, startMinutes, 0));
-    const tomorrow = addDays(new Date().setHours(endHours, endMinutes, 0), 1);
+
     switch (value) {
       case "today":
         setTempStartDate(today);
-        setTempEndDate(tomorrow);
+        setTempEndDate(daystart !== 0
+          ? new Date(addDays(new Date().setHours(endHours, endMinutes, 59), 1))
+          : new Date(new Date().setHours(endHours, endMinutes, 59)));
         break;
       case "yesterday":
         const yesterday = subDays(today, 1);
         setTempStartDate(new Date(yesterday.setHours(startHours, startMinutes, 0)));
-        setTempEndDate(new Date(today.setHours(endHours, endMinutes, 0)));
+        setTempEndDate(daystart !== 0
+          ? new Date(addDays(yesterday.setHours(endHours, endMinutes, 59), 1))
+          : new Date(yesterday.setHours(endHours, endMinutes, 59)));
         break;
       case "thisWeek":
-        setTempStartDate(new Date(startOfWeek(today, { weekStartsOn: 1 }).setHours(startHours, startMinutes, 0)));
-        setTempEndDate(new Date(endOfWeek(today, { weekStartsOn: 2 }).setHours(endHours, endMinutes, 0)));
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+        setTempStartDate(new Date(weekStart.setHours(startHours, startMinutes, 0)));
+        setTempEndDate(daystart !== 0
+          ? new Date(addDays(weekEnd.setHours(endHours, endMinutes, 59), 1))
+          : new Date(weekEnd.setHours(endHours, endMinutes, 59)));
         break;
-
       case "lastWeek":
-        const lastWeek = subWeeks(today, 1);
-        setTempStartDate(new Date(startOfWeek(lastWeek, { weekStartsOn: 1 }).setHours(startHours, startMinutes, 0)));
-        setTempEndDate(new Date(endOfWeek(lastWeek, { weekStartsOn: 2 }).setHours(endHours, endMinutes, 0)));
+        const lastWeekStart = startOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
+        const lastWeekEnd = endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
+        setTempStartDate(new Date(lastWeekStart.setHours(startHours, startMinutes, 0)));
+        setTempEndDate(daystart !== 0
+          ? new Date(addDays(lastWeekEnd.setHours(endHours, endMinutes, 59), 1))
+          : new Date(lastWeekEnd.setHours(endHours, endMinutes, 59)));
         break;
       case "thisMonth":
-        setTempStartDate(new Date(startOfMonth(today).setHours(startHours, startMinutes, 0)));
-        setTempEndDate(addDays(new Date(endOfMonth(today).setHours(endHours, endMinutes, 0)), 1));
+        const monthStart = startOfMonth(today);
+        const monthEnd = endOfMonth(today);
+        setTempStartDate(new Date(monthStart.setHours(startHours, startMinutes, 0)));
+        setTempEndDate(daystart !== 0
+          ? new Date(addDays(monthEnd.setHours(endHours, endMinutes, 59), 1))
+          : new Date(monthEnd.setHours(endHours, endMinutes, 59)));
         break;
       case "lastMonth":
-        const lastMonth = subMonths(today, 1);
-        setTempStartDate(new Date(startOfMonth(lastMonth).setHours(startHours, startMinutes, 0)));
-        setTempEndDate(addDays(new Date(endOfMonth(lastMonth).setHours(endHours, endMinutes, 0)), 1));
+        const lastMonthStart = startOfMonth(subMonths(today, 1));
+        const lastMonthEnd = endOfMonth(subMonths(today, 1));
+        setTempStartDate(new Date(lastMonthStart.setHours(startHours, startMinutes, 0)));
+        setTempEndDate(daystart !== 0
+          ? new Date(addDays(lastMonthEnd.setHours(endHours, endMinutes, 59), 1))
+          : new Date(lastMonthEnd.setHours(endHours, endMinutes, 59)));
         break;
       case "thisYear":
-        setTempStartDate(new Date(startOfYear(today).setHours(startHours, startMinutes, 0)));
-        setTempEndDate(addDays(new Date(endOfYear(today).setHours(endHours, endMinutes, 0)), 1));
-        break;
-      case "lastYear":
-        const lastYear = subYears(today, 1);
-        setTempStartDate(new Date(startOfYear(lastYear).setHours(startHours, startMinutes, 0)));
-        setTempEndDate(addDays(new Date(endOfYear(lastYear).setHours(endHours, endMinutes, 0)), 1));
-        break;
-      case "lastSevenDays":
-        setTempStartDate(subDays(today, 7));
-        setTempEndDate(today);
+        const yearStart = startOfYear(today);
+        const yearEnd = endOfYear(today);
+        setTempStartDate(new Date(yearStart.setHours(startHours, startMinutes, 0)));
+        setTempEndDate(daystart !== 0
+          ? new Date(addDays(yearEnd.setHours(endHours, endMinutes, 59), 1))
+          : new Date(yearEnd.setHours(endHours, endMinutes, 59)));
         break;
       default:
         break;
     }
+  }, [settings, tabStore, activeTab]);
+
+  const handleApplyFilters = useCallback(() => {
+    if (tempStartDate) {
+      const [hours, minutes] = tempStartTime.split(':');
+      const newStartDate = new Date(tempStartDate);
+      newStartDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      handleStartDateSelect(newStartDate);
+    }
+
+    if (tempEndDate) {
+      const [hours, minutes] = tempEndTime.split(':');
+      const newEndDate = new Date(tempEndDate);
+      newEndDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      handleEndDateSelect(newEndDate);
+    }
+
+    const branchIDs = pendingBranches.map(branch => branch.BranchID);
+
+    setFilter({
+      ...selectedFilter,
+      date: {
+        from: toZonedTime(tempStartDate || new Date(), 'Europe/Istanbul'),
+        to: toZonedTime(tempEndDate || new Date(), 'Europe/Istanbul')
+      },
+      selectedBranches: pendingBranches,
+    });
+ 
+  }, [tempStartDate, tempEndDate, tempStartTime, tempEndTime, pendingBranches, selectedFilter]);
+
+  const memoizedBranches = useMemo(() => selectedFilter.branches, [selectedFilter.branches]);
+  const memoizedTags = useMemo(() => selectedFilter.tags, [selectedFilter.tags]);
+
+  const applyFilters = () => {
+    handleApplyFilters();
+  };
+
+  const clearSelectedBranches = () => {
+    setPendingBranches([]);
+    selectedFilter.selectedTags = [];
+  };
+
+  const dateRangeChange = (value: string) => {
+    handleDateRangeChange(value);
   };
 
   return (
-    <BranchProvider>
       <TagProvider>
         <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md shadow-lg dark:shadow-slate-900/20">
           <div className="flex h-16 items-center px-4 gap-4">
             <SidebarTrigger className="-ml-1" />
 
-            {/* Desktop View */}
             <div className="hidden md:grid md:grid-cols-4 lg:grid-cols-5 gap-2 flex-1">
               <Select onValueChange={dateRangeChange} value={selectedDateRange}>
-                <SelectTrigger className="w-full bg-background/60 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all duration-300 hover:border-border">
+                <SelectTrigger className="w-full bg-background/60 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all duration-150">
                   <SelectValue placeholder={t.dateRange} />
                 </SelectTrigger>
-                <SelectContent className="bg-background/95 backdrop-blur-md border-border/50 shadow-xl">
-                  <SelectItem value="today" className="cursor-pointer">{t.today}</SelectItem>
-                  <SelectItem value="yesterday" className="cursor-pointer">{t.yesterday}</SelectItem>
-                  <SelectItem value="thisWeek" className="cursor-pointer">{t.thisWeek}</SelectItem>
-                  <SelectItem value="lastWeek" className="cursor-pointer">{t.lastWeek}</SelectItem>
-                  <SelectItem value="thisMonth" className="cursor-pointer">{t.thisMonth}</SelectItem>
-                  <SelectItem value="lastMonth" className="cursor-pointer">{t.lastMonth}</SelectItem>
-                  <SelectItem value="thisYear" className="cursor-pointer">{t.thisYear}</SelectItem>
+                <SelectContent
+                  className="bg-background/95 backdrop-blur-sm border-border/50 shadow-xl"
+                  sideOffset={4}
+                  align="start"
+                  position="popper"
+                >
+                  <SelectGroup>
+                    <SelectItem value="today" className="cursor-pointer transition-colors">{t.today}</SelectItem>
+                    <SelectItem value="yesterday" className="cursor-pointer transition-colors">{t.yesterday}</SelectItem>
+                    <SelectItem value="thisWeek" className="cursor-pointer transition-colors">{t.thisWeek}</SelectItem>
+                    <SelectItem value="lastWeek" className="cursor-pointer transition-colors">{t.lastWeek}</SelectItem>
+                    <SelectItem value="thisMonth" className="cursor-pointer transition-colors">{t.thisMonth}</SelectItem>
+                    <SelectItem value="lastMonth" className="cursor-pointer transition-colors">{t.lastMonth}</SelectItem>
+                    <SelectItem value="thisYear" className="cursor-pointer transition-colors">{t.thisYear}</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
@@ -528,8 +595,8 @@ export default function Header() {
                     >
                       {selectedFilter.selectedTags.length > 0
                         ? `${selectedFilter.selectedTags.length} ${t.tags}`
-                        : pendingBranches.length > 0
-                          ? `${pendingBranches.length} ${t.branchesSelected}`
+                        : memoizedPendingBranches.length > 0
+                          ? `${memoizedPendingBranches.length} ${t.branchesSelected}`
                           : t.allBranches}
                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -546,14 +613,17 @@ export default function Header() {
                       <CommandGroup>
                         <div className="p-2 border-b border-border/50">
                           <div className="font-semibold mb-2 px-2">{t.tags}</div>
-                          <div className="max-h-[150px] overflow-y-auto [&::-webkit-scrollbar]:w-2
-                        [&::-webkit-scrollbar-thumb]:bg-gray-300/50
-                        [&::-webkit-scrollbar-thumb]:rounded-full
-                        [&::-webkit-scrollbar-track]:bg-transparent
-                        dark:[&::-webkit-scrollbar-thumb]:bg-gray-700/50
-                        hover:[&::-webkit-scrollbar-thumb]:bg-gray-300/80
-                        dark:hover:[&::-webkit-scrollbar-thumb]:bg-gray-700/80">
-                            {selectedFilter.tags.map((tag) => (
+                          <div className="max-h-[150px] overflow-y-auto   
+                          border-r border-gray-200 dark:border-slate-700
+                          scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent 
+                          [&::-webkit-scrollbar]:w-2
+                          [&::-webkit-scrollbar-thumb]:bg-gray-300/50
+                          [&::-webkit-scrollbar-thumb]:rounded-full
+                          [&::-webkit-scrollbar-track]:bg-transparent
+                          dark:[&::-webkit-scrollbar-thumb]:bg-gray-700/50
+                          hover:[&::-webkit-scrollbar-thumb]:bg-gray-300/80
+                          dark:hover:[&::-webkit-scrollbar-thumb]:bg-gray-700/80">
+                            {memoizedTags.map((tag) => (
                               <CommandItem
                                 key={tag.TagID}
                                 value={tag.TagTitle}
@@ -561,19 +631,15 @@ export default function Header() {
                                 onSelect={() => {
                                   handleTagSelect(tag);
 
-                                  // Seçili tüm tag'lerin branch'larını topla
                                   const allSelectedTags = !selectedFilter.selectedTags.some(t => t.TagID === tag.TagID)
-                                    ? [...selectedFilter.selectedTags, tag]  // Yeni tag ekleniyor
-                                    : selectedFilter.selectedTags.filter(t => t.TagID !== tag.TagID);  // Tag kaldırılıyor
+                                    ? [...selectedFilter.selectedTags, tag]
+                                    : selectedFilter.selectedTags.filter(t => t.TagID !== tag.TagID);
 
-
-                                  // Tüm seçili tag'lerin BranchID'lerini topla
                                   const allBranchIDs = allSelectedTags.reduce((ids: string[], tag) => {
                                     return [...ids, ...tag.BranchID];
                                   }, []);
 
-                                  // Bu BranchID'lere sahip tüm branch'ları seç
-                                  const selectedBranches = selectedFilter.branches.filter(branch =>
+                                  const selectedBranches = memoizedBranches.filter(branch =>
                                     allBranchIDs.includes(branch.BranchID)
                                   );
 
@@ -591,32 +657,24 @@ export default function Header() {
                         </div>
                         <div className="pt-2">
                           <div className="font-semibold mb-2 px-2">{t.branches}</div>
-                          <CommandList
-                            className="max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:w-2
-                        [&::-webkit-scrollbar-thumb]:bg-gray-300/50
-                        [&::-webkit-scrollbar-thumb]:rounded-full
-                        [&::-webkit-scrollbar-track]:bg-transparent
-                        dark:[&::-webkit-scrollbar-thumb]:bg-gray-700/50
-                        hover:[&::-webkit-scrollbar-thumb]:bg-gray-300/80
-                        dark:hover:[&::-webkit-scrollbar-thumb]:bg-gray-700/80"
-                          >
-                            {selectedFilter.branches.map((branch: Efr_Branches) => (
+                          <CommandList className="max-h-[200px] overflow-y-auto">
+                            {memoizedBranches.map((branch: Efr_Branches) => (
                               <CommandItem
                                 key={branch.BranchID}
                                 value={branch.BranchName}
                                 onSelect={() => {
-                                  const isSelected = pendingBranches.find(
+                                  const isSelected = memoizedPendingBranches.find(
                                     (selectedBranch: Efr_Branches) =>
                                       selectedBranch.BranchID === branch.BranchID
                                   );
 
                                   const newSelectedBranches = isSelected
-                                    ? pendingBranches.filter(
+                                    ? memoizedPendingBranches.filter(
                                       (selectedBranch: Efr_Branches) =>
                                         selectedBranch.BranchID !==
                                         branch.BranchID
                                     )
-                                    : [...pendingBranches, branch];
+                                    : [...memoizedPendingBranches, branch];
 
                                   setPendingBranches(newSelectedBranches);
                                 }}
@@ -624,7 +682,7 @@ export default function Header() {
                               >
                                 <Checkbox
                                   checked={
-                                    pendingBranches.find(
+                                    memoizedPendingBranches.find(
                                       (selectedBranch: Efr_Branches) =>
                                         selectedBranch.BranchID === branch.BranchID
                                     )
@@ -644,7 +702,7 @@ export default function Header() {
                 </Popover>
 
                 <div className="flex gap-2">
-                  {pendingBranches.length > 0 && (
+                  {memoizedPendingBranches.length > 0 && (
                     <Button
                       variant="outline"
                       size="icon"
@@ -682,7 +740,7 @@ export default function Header() {
             </div>
 
             <div className="flex items-center gap-2">
-              <DropdownMenu>
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
@@ -698,6 +756,12 @@ export default function Header() {
                       )}
                       {language === "ar" && (
                         <span className="fi fi-sa text-2xl" />
+                      )}
+                      {language === "az" && (
+                        <span className="fi fi-az text-2xl" />
+                      )}
+                      {language === "ru" && (
+                        <span className="fi fi-ru text-2xl" />
                       )}
                     </div>
                   </Button>
@@ -721,15 +785,28 @@ export default function Header() {
                     <span className="text-lg">English</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
+                    onClick={() => setLanguage("az")}
+                    className="cursor-pointer flex items-center gap-4 p-4"
+                  >
+                    <span className="fi fi-az text-2xl" />
+                    <span className="text-lg">Azərbaycan</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setLanguage("ru")}
+                    className="cursor-pointer flex items-center gap-4 p-4"
+                  >
+                    <span className="fi fi-ru text-2xl" />
+                    <span className="text-lg">Русский</span>
+                  </DropdownMenuItem>
+                  {/* <DropdownMenuItem
                     onClick={() => setLanguage("ar")}
                     className="cursor-pointer flex items-center gap-4 p-4"
                   >
                     <span className="fi fi-sa text-2xl" />
                     <span className="text-lg">العربية</span>
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                 </DropdownMenuContent>
               </DropdownMenu>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -760,10 +837,19 @@ export default function Header() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+       
+{/* 
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-accent/50"
+                onClick={() => handleTabOpen('settings', t.settings)}
+              >
+                <Settings className="h-5 w-5" />
+              </Button> */}
             </div>
           </div>
         </header>
       </TagProvider>
-    </BranchProvider>
   );
 }

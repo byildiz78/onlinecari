@@ -55,11 +55,22 @@ export default function CustomerListPage() {
                 setCustomers(response.data);
             } catch (error) {
                 console.error('Error fetching users:', error);
-                toast({
-                    title: "Hata!",
-                    description: "Kullanıcılar yüklenirken bir hata oluştu.",
-                    variant: "destructive",
-                });
+                
+                // API'den 404 hatası geldiğinde (veri bulunamadı)
+                if (error.response && error.response.status === 404) {
+                    toast({
+                        title: "Bilgi",
+                        description: "Herhangi bir müşteri kaydı bulunamadı.",
+                        variant: "default",
+                    });
+                } else {
+                    // Diğer hatalar için
+                    toast({
+                        title: "Hata!",
+                        description: "Müşteri listesi yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.",
+                        variant: "destructive",
+                    });
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -71,16 +82,6 @@ export default function CustomerListPage() {
     // Satış işlemi
     const handleSaleSubmit = () => {
         if (!transactionAmount || !selectedCustomer) return;
-        
-        // Burada gerçek API çağrısı yapılacak
-        // console.log("Satış kaydedildi:", {
-        //     customerId: selectedCustomer.id,
-        //     amount: parseFloat(transactionAmount),
-        //     description: transactionDescription,
-        //     date: transactionDate
-        // });
-        
-        // Modal'ı kapat ve formları temizle
         setSaleModalOpen(false);
         setTransactionAmount('');
         setTransactionDescription('');
@@ -89,15 +90,6 @@ export default function CustomerListPage() {
     // Tahsilat işlemi
     const handleCollectionSubmit = () => {
         if (!transactionAmount || !selectedCustomer) return;
-        
-        // Burada gerçek API çağrısı yapılacak
-        // console.log("Tahsilat kaydedildi:", {
-        //     customerId: selectedCustomer.id,
-        //     amount: parseFloat(transactionAmount),
-        //     description: transactionDescription,
-        //     date: transactionDate
-        // });
-        
         // Modal'ı kapat ve formları temizle
         setCollectionModalOpen(false);
         setTransactionAmount('');

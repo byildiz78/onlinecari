@@ -43,11 +43,22 @@ export default function TransactionReportPage() {
                 setSalesTransactions(response.data);
             } catch (error) {
                 console.error('Error fetching users:', error);
-                toast({
-                    title: "Hata!",
-                    description: "Kullanıcılar yüklenirken bir hata oluştu.",
-                    variant: "destructive",
-                });
+                
+                // API'den 404 hatası geldiğinde (veri bulunamadı)
+                if (error.response && error.response.status === 404) {
+                    toast({
+                        title: "Bilgi",
+                        description: "Seçilen tarih aralığında herhangi bir işlem bulunamadı. Lütfen farklı bir tarih aralığı seçin.",
+                        variant: "default",
+                    });
+                } else {
+                    // Diğer hatalar için
+                    toast({
+                        title: "Hata!",
+                        description: "İşlem raporu verilerini alırken bir sorun oluştu. Lütfen tekrar deneyin.",
+                        variant: "destructive",
+                    });
+                }
             } finally {
                 setIsLoading(false);
             }
