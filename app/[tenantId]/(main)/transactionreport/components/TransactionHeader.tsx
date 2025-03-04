@@ -3,11 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { exportToExcel, formatTransactionData } from "@/lib/export-utils"
 
-interface TransactionHeaderProps {
-    filteredTransactions: any[]
-}
-
-export function TransactionHeader({ filteredTransactions }: TransactionHeaderProps) {
+export function TransactionHeader() {
     return (
         <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -18,12 +14,6 @@ export function TransactionHeader({ filteredTransactions }: TransactionHeaderPro
                     Müşteri işlem hareketlerini takip edin
                 </p>
             </div>
-            <Button
-                onClick={() => exportToExcel(formatTransactionData(filteredTransactions), 'islem-raporu')}
-                className="bg-green-600 hover:bg-green-700 text-white"
-            >
-                Excel'e Aktar
-            </Button>
         </div>
     )
 }

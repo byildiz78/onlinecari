@@ -3,11 +3,8 @@
 import { Button } from "@/components/ui/button"
 import { exportToExcel, formatBalanceData } from "@/lib/export-utils"
 
-interface BalanceHeaderProps {
-    filteredBalances: any[]
-}
 
-export function BalanceHeader({ filteredBalances }: BalanceHeaderProps) {
+export function BalanceHeader() {
     return (
         <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -18,12 +15,6 @@ export function BalanceHeader({ filteredBalances }: BalanceHeaderProps) {
                     Müşteri bakiye durumlarını takip edin
                 </p>
             </div>
-            <Button
-                onClick={() => exportToExcel(formatBalanceData(filteredBalances), 'bakiye-raporu')}
-                className="bg-green-600 hover:bg-green-700 text-white"
-            >
-                Excel'e Aktar
-            </Button>
         </div>
     )
 }
