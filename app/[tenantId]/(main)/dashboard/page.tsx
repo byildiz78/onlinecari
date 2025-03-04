@@ -8,7 +8,6 @@ import NotificationPanel from "@/app/[tenantId]/(main)/dashboard/components/Noti
 import { ArrowDownRight, ArrowUpRight, ChevronRight, CreditCard, Receipt, Store, TrendingUp, Users, Wallet, } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTabStore } from "@/stores/tab-store";
-import { useUserStore } from "@/stores/users-store";
 import axios from "@/lib/axios";
 import { Card } from "@/components/ui/card";
 import { TrendsChart } from "./components/TrendsChart";
@@ -51,27 +50,9 @@ interface DashboardData {
     }[];
 }
 
-interface Branch {
-    BranchID: string | number;
-}
-
-interface Settings {
-    minDiscountAmount: number;
-    minCancelAmount: number;
-    minSaleAmount: number;
-}
-
-const DEFAULT_SETTINGS: Settings = {
-    minDiscountAmount: 0,
-    minCancelAmount: 0,
-    minSaleAmount: 0
-};
-
 export default function Dashboard() {
     const { activeTab } = useTabStore();
-    const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
     const [selectedBranches, setSelectedBranches] = useState<number[]>([]);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const { settings } = useSettingsStore();
     const { selectedFilter } = useFilterStore();
     const pathname = usePathname();
@@ -177,12 +158,8 @@ export default function Dashboard() {
     // Kullanıcının istediği useEffect'ler
     useEffect(() => {
         if (activeTab !== "dashboard" || document.hidden) return;
-
-        console.log("Dashboard tab active, hasFetched:", hasFetched);
-
         // İlk yükleme durumu
         if (!hasFetched) {
-            console.log("Initial fetch triggered");
             fetchData(true);
             return;
         }
@@ -193,16 +170,13 @@ export default function Dashboard() {
         if (activeTab !== "dashboard" || document.hidden || !hasFetched) return;
 
         if (filterApplied || shouldFetch) {
-            console.log("Filter applied or refresh triggered:", { filterApplied, shouldFetch });
             fetchData(false);
             
             if (filterApplied) {
-                console.log("Resetting filterApplied");
                 setFilterApplied(false);
             }
             
             if (shouldFetch) {
-                console.log("Resetting shouldFetch");
                 setShouldFetch(false);
             }
         }
