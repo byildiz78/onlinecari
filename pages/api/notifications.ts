@@ -23,24 +23,44 @@ export default async function handler(
     
     const tenantId = extractTenantId(req.headers.referer);
     const auditQuery = `
-        SELECT TOP 10 
-        t.AddDateTime AS [Date],
-        cf.CustomerName AS [CustomerName],
-        t.CustomField1 AS [CheckNo],
-        ROUND(t.BonusUsed, 2) AS [Debit],
-        cf.BranchID AS [BranchName],
-        CASE
-            WHEN EXISTS (
-            SELECT 1 FROM [${tenantId}].bonus_orderpayments p WITH (NOLOCK) WHERE p.OrderKey = t.OrderKey AND (p.IsAccountSale = 1 OR p.PaymentMethodName = 'ONLİNE CARİ')) THEN 'Sale' 
-            WHEN EXISTS (SELECT 1 FROM [${tenantId}].bonus_orderpayments p WITH (NOLOCK) WHERE p.OrderKey = t.OrderKey AND p.IsAccountPayment = 1) THEN 'Collection' 
-            ELSE 'Other' END AS SaleType 
-            FROM
-            [${tenantId}].bonus_transactions AS t WITH (NOLOCK)
-            INNER JOIN [${tenantId}].bonus_customerfiles AS cf WITH (NOLOCK) ON cf.CustomerKey = t.CustomerKey 
-            WHERE 1=1
-            AND BonusUsed <> 0 AND BonusUsed IS NOT NULL 
-        ORDER BY
-            t.AddDateTime DESC;
+    SELECT TOP 10
+    t.AddDateTime AS [Date],
+    cf.CustomerName AS [CustomerName],
+    t.CustomField1 AS [CheckNo],
+    CASE 
+        WHEN t.BonusUsed > 0 THEN ROUND(t.BonusUsed, 2)
+        ELSE ROUND(t.BonusEarned, 2)
+    END AS [Debit],
+    cf.BranchID AS [BranchName],
+    CASE
+        WHEN t.OrderKey = '00000000-0000-0000-0000-000000000000' AND t.PaymentKey = '00000000-0000-0000-0000-000000000000' THEN
+            CASE 
+                WHEN t.BonusUsed > 0 THEN 'Sale'
+                WHEN t.BonusEarned > 0 THEN 'Collection'
+                ELSE 'Other'
+            END
+        WHEN EXISTS (
+            SELECT 1 
+            FROM [${tenantId}].bonus_orderpayments p WITH (NOLOCK) 
+            WHERE p.OrderKey = t.OrderKey AND (p.IsAccountSale = 1 OR p.PaymentMethodName = 'ONLİNE CARİ')
+        ) THEN 'Sale'
+        WHEN EXISTS (
+            SELECT 1 
+            FROM [${tenantId}].bonus_orderpayments p WITH (NOLOCK) 
+            WHERE p.OrderKey = t.OrderKey AND p.IsAccountPayment = 1
+        ) THEN 'Collection'
+        ELSE 'Other' 
+    END AS SaleType
+FROM
+    [${tenantId}].bonus_transactions AS t WITH (NOLOCK)
+    INNER JOIN [${tenantId}].bonus_customerfiles AS cf WITH (NOLOCK) ON cf.CustomerKey = t.CustomerKey
+WHERE 1=1
+    AND (
+        (t.BonusUsed > 0) OR 
+        (t.BonusEarned > 0)
+    )
+ORDER BY
+    t.AddDateTime DESC;
         `;
 
        const instance = Dataset.getInstance();

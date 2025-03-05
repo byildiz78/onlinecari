@@ -459,7 +459,7 @@ export function DetailedStatementModal({
                                     <TableHead>Tarih</TableHead>
                                     <TableHead>Belge No</TableHead>
                                     <TableHead>Açıklama</TableHead>
-                                    <TableHead>Çek No</TableHead>
+                                    <TableHead>Açıklama / Çek No</TableHead>
                                     <TableHead className="text-right">Tutar</TableHead>
                                 </TableRow>
                             </TableHeader>

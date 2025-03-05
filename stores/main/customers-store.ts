@@ -34,20 +34,19 @@ export const useCustomersStore = create<CustomersState>((set) => ({
         if (c.CustomerKey === customerKey) {
           // Eğer borç ise (satış işlemi)
           if (isDebit) {
+            const bonusEarned = amount * (c.SpecialBonusPercent || 0) / 100;
             return {
               ...c,
-              TotalDebt: (c.TotalDebt || 0) + amount,
-              TotalRemainig: (c.TotalRemainig || 0) + amount,
-              TotalBonusEarned: (c.TotalBonusEarned || 0) + (amount * (c.SpecialBonusPercent || 0) / 100),
-              TotalBonusRemaing: (c.TotalBonusRemaing || 0) + (amount * (c.SpecialBonusPercent || 0) / 100)
+              TotalBonusEarned: (c.TotalBonusEarned || 0) + bonusEarned,
+              TotalBonusRemaing: (c.TotalBonusRemaing || 0) + bonusEarned
             };
           } 
           // Eğer alacak ise (tahsilat işlemi)
           else {
             return {
               ...c,
-              TotalPayment: (c.TotalPayment || 0) + amount,
-              TotalRemainig: (c.TotalRemainig || 0) - amount
+              TotalBonusUsed: (c.TotalBonusUsed || 0) + amount,
+              TotalBonusRemaing: (c.TotalBonusRemaing || 0) - amount
             };
           }
         }
@@ -57,15 +56,13 @@ export const useCustomersStore = create<CustomersState>((set) => ({
         ? isDebit
           ? {
               ...state.selectedCustomer,
-              TotalDebt: (state.selectedCustomer.TotalDebt || 0) + amount,
-              TotalRemainig: (state.selectedCustomer.TotalRemainig || 0) + amount,
               TotalBonusEarned: (state.selectedCustomer.TotalBonusEarned || 0) + (amount * (state.selectedCustomer.SpecialBonusPercent || 0) / 100),
               TotalBonusRemaing: (state.selectedCustomer.TotalBonusRemaing || 0) + (amount * (state.selectedCustomer.SpecialBonusPercent || 0) / 100)
             }
           : {
               ...state.selectedCustomer,
-              TotalPayment: (state.selectedCustomer.TotalPayment || 0) + amount,
-              TotalRemainig: (state.selectedCustomer.TotalRemainig || 0) - amount
+              TotalBonusUsed: (state.selectedCustomer.TotalBonusUsed || 0) + amount,
+              TotalBonusRemaing: (state.selectedCustomer.TotalBonusRemaing || 0) - amount
             }
         : state.selectedCustomer
     })),

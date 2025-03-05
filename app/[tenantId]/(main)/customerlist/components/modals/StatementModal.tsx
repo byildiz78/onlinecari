@@ -398,7 +398,7 @@ export function StatementModal({
                                 <TableRow className="hover:bg-transparent border-b border-gray-100 dark:border-gray-800">
                                     <TableHead>Tarih</TableHead>
                                     <TableHead>Açıklama</TableHead>
-                                    <TableHead>Çek No</TableHead>
+                                    <TableHead>Açıklama / Çek No</TableHead>
                                     <TableHead className="text-right">Tutar</TableHead>
                                 </TableRow>
                             </TableHeader>
