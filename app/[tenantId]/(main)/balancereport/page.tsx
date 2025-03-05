@@ -96,8 +96,8 @@ export default function BalanceReportPage() {
     // Verileri filtrele
     const filteredBalances = balanceCustomers.filter(balance => {
         const matchesSearch =
-            balance?.CustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            balance?.PhoneNumber.toLowerCase().includes(searchTerm.toLowerCase())
+            (balance?.CustomerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (balance?.PhoneNumber?.toLowerCase() || '').includes(searchTerm.toLowerCase())
 
         return matchesSearch
     })
@@ -153,6 +153,7 @@ export default function BalanceReportPage() {
             <div className="flex flex-col flex-1 overflow-hidden">
                 <BalanceTable
                     paginatedBalances={paginatedBalances}
+                    filteredBalances={filteredBalances}
                     isLoading={isLoading}
                 />
 

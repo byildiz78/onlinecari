@@ -5,13 +5,46 @@ import { CustomLoader } from "@/components/ui/custom-loader"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDate } from "date-fns"
 import { Calendar, FileText, User, CreditCard, Wallet } from "lucide-react"
+import { useMemo } from "react"
+import { cn } from "@/lib/utils"
 
 interface CollectionTableProps {
     paginatedTransactions: any[]
+    filteredTransactions: any[]
     isLoading: boolean
 }
 
-export function CollectionTable({ paginatedTransactions, isLoading }: CollectionTableProps) {
+export function CollectionTable({ paginatedTransactions, filteredTransactions, isLoading }: CollectionTableProps) {
+    const totalAmount = useMemo(() => {
+        if (!filteredTransactions || filteredTransactions.length === 0) {
+            return 0;
+        }
+
+        return filteredTransactions.reduce((total, transaction) => {
+            let amount = 0;
+            
+            try {
+                if (transaction.Credit) {
+                    if (typeof transaction.Credit === 'number') {
+                        amount = transaction.Credit;
+                    } else if (typeof transaction.Credit === 'string') {
+                        amount = parseFloat(transaction.Credit.replace(/\./g, '').replace(',', '.'));
+                    }
+                }
+                
+                amount = isNaN(amount) ? 0 : amount;
+            } catch (error) {
+                console.error("Değer dönüştürme hatası:", error);
+            }
+            
+            return total + amount;
+        }, 0);
+    }, [filteredTransactions]);
+
+    const formatNumber = (num: number) => {
+        return num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
     return (
         <Card className="border-0 shadow-xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-1 overflow-hidden rounded-xl">
             <div className="rounded-xl border border-gray-100 dark:border-gray-800 h-full flex flex-col">
@@ -85,30 +118,44 @@ export function CollectionTable({ paginatedTransactions, isLoading }: Collection
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedTransactions.map((transaction) => (
-                                    <TableRow
-                                        key={transaction.id}
-                                        className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
-                                    >
-                                        <TableCell>
-                                            <div className="font-medium">{formatDate(transaction.Date,"dd/MM/yyyy HH:mm")}</div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{transaction.CustomerName}</div>
+                                <>
+                                    {paginatedTransactions.map((transaction) => (
+                                        <TableRow
+                                            key={transaction.id}
+                                            className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                                        >
+                                            <TableCell>
+                                                <div className="font-medium">{formatDate(transaction.Date,"dd/MM/yyyy HH:mm")}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">{transaction.CustomerName}</div>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="font-medium text-green-600 dark:text-green-400">
+                                                    {transaction.Credit}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">{transaction.SaleType}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">{transaction.PaymentType ?? "Boş"}</div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    
+                                    <TableRow className="bg-gray-100 dark:bg-gray-800 font-bold">
+                                        <TableCell colSpan={2} className="text-right">
+                                            <div className="font-bold">TOPLAM TAHSİLAT:</div>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <div className="font-medium text-green-600 dark:text-green-400">
-                                                {transaction.Credit}
+                                            <div className="font-bold text-green-600 dark:text-green-400">
+                                                {formatNumber(totalAmount)}
                                             </div>
                                         </TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{transaction.SaleType}</div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{transaction.PaymentType ?? "Boş"}</div>
-                                        </TableCell>
+                                        <TableCell colSpan={2}></TableCell>
                                     </TableRow>
-                                ))
+                                </>
                             )}
                         </TableBody>
                     </Table>

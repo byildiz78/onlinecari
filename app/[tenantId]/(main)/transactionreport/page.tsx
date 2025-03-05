@@ -95,8 +95,8 @@ export default function TransactionReportPage() {
     // Verileri filtrele
     const filteredTransactions = salesTransactions.filter(transaction => {
         const matchesSearch =
-            transaction.CustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            transaction.CheckNo.toLowerCase().includes(searchTerm.toLowerCase())
+            (transaction?.CustomerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (transaction?.CheckNo?.toLowerCase() || '').includes(searchTerm.toLowerCase())
 
         return matchesSearch
     })
@@ -151,6 +151,7 @@ export default function TransactionReportPage() {
             <div className="flex flex-col flex-1 overflow-hidden">
                 <TransactionTable
                     paginatedTransactions={paginatedTransactions}
+                    filteredTransactions={filteredTransactions}
                     isLoading={isLoading}
                 />
 
