@@ -96,9 +96,9 @@ export default function CollectionTransactionsPage() {
     // Verileri filtrele
     const filteredTransactions = collectionTransactions.filter(transaction => {
         const matchesSearch = 
-            transaction.CustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            transaction.SaleType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            transaction.PaymentType.toLowerCase().includes(searchTerm.toLowerCase())
+            (transaction?.CustomerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (transaction?.SaleType?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (transaction?.PaymentType?.toLowerCase() || '').includes(searchTerm.toLowerCase())
         return matchesSearch
     })
 
@@ -152,6 +152,7 @@ export default function CollectionTransactionsPage() {
             <div className="flex flex-col flex-1 overflow-hidden">
                 <CollectionTable 
                     paginatedTransactions={paginatedTransactions}
+                    filteredTransactions={filteredTransactions}
                     isLoading={isLoading}
                 />
                 

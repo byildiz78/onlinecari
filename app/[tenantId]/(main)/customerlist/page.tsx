@@ -143,8 +143,8 @@ export default function CustomerListPage() {
 
     const filteredCustomers = customers.filter(customer => {
         const matchesSearch = 
-            customer.CustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            customer.CardNumber.toLowerCase().includes(searchTerm.toLowerCase())
+            (customer?.CustomerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (customer?.CardNumber?.toLowerCase() || '').includes(searchTerm.toLowerCase())
 
         return matchesSearch
     })
@@ -173,6 +173,7 @@ export default function CustomerListPage() {
                     {/* Customer Table */}
                     <CustomerTable 
                         customers={paginatedCustomers}
+                        filteredCustomers={filteredCustomers}
                         onViewSaleModal={openSaleModal}
                         onViewCollectionModal={openCollectionModal}
                         onViewStatement={viewStatement}

@@ -87,10 +87,11 @@ export default async function handler(
         DECLARE @PreviousMonthEnd DATE = EOMONTH(GETDATE(), -1)
 
         SELECT @TotalCollection = ISNULL(SUM(CASE WHEN 
-            ISNULL(p.IsAccountPayment, 0) = 1 OR 
-            t.CustomField2 = 'BAKİYE YÜKLEME' OR 
-            p.PaymentMethodName = 'ONLİNE CARİ' 
-            THEN ABS(t.BonusEarned) ELSE 0 END), 0)
+                p.OrderKey IS NULL OR
+                ISNULL(p.IsAccountPayment, 0) = 1 OR 
+                t.CustomField2 = 'BAKİYE YÜKLEME' OR 
+                p.PaymentMethodName = 'ONLİNE CARİ' 
+                THEN t.BonusEarned ELSE 0 END), 0)
         FROM
             [${tenantId}].bonus_transactions AS t WITH (NOLOCK)
             INNER JOIN [${tenantId}].bonus_customerfiles as cf WITH (NOLOCK) ON cf.CustomerKey = t.CustomerKey
@@ -99,6 +100,7 @@ export default async function handler(
             t.BonusEarned <> 0 AND t.BonusEarned IS NOT NULL
 
         SELECT @CurrentMonthTotal = ISNULL(SUM(CASE WHEN 
+            p.OrderKey IS NULL OR
             ISNULL(p.IsAccountPayment, 0) = 1 OR 
             t.CustomField2 = 'BAKİYE YÜKLEME' OR 
             p.PaymentMethodName = 'ONLİNE CARİ' 
@@ -112,6 +114,7 @@ export default async function handler(
             AND t.BonusEarned <> 0 AND t.BonusEarned IS NOT NULL
 
         SELECT @PreviousMonthTotal = ISNULL(SUM(CASE WHEN 
+            p.OrderKey IS NULL OR
             ISNULL(p.IsAccountPayment, 0) = 1 OR 
             t.CustomField2 = 'BAKİYE YÜKLEME' OR 
             p.PaymentMethodName = 'ONLİNE CARİ' 
@@ -142,6 +145,7 @@ export default async function handler(
         DECLARE @PreviousMonthEnd DATE = EOMONTH(GETDATE(), -1)
 
         SELECT @CurrentMonthTotal = ISNULL(SUM(CASE WHEN 
+            p.OrderKey IS NULL OR
             ISNULL(p.IsAccountPayment, 0) = 1 OR 
             t.CustomField2 = 'BAKİYE YÜKLEME' OR 
             p.PaymentMethodName = 'ONLİNE CARİ' 
@@ -155,6 +159,7 @@ export default async function handler(
             AND t.BonusEarned <> 0 AND t.BonusEarned IS NOT NULL
 
         SELECT @PreviousMonthTotal = ISNULL(SUM(CASE WHEN 
+            p.OrderKey IS NULL OR
             ISNULL(p.IsAccountPayment, 0) = 1 OR 
             t.CustomField2 = 'BAKİYE YÜKLEME' OR 
             p.PaymentMethodName = 'ONLİNE CARİ' 

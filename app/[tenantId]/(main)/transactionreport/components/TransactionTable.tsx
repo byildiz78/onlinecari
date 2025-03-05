@@ -6,13 +6,69 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn, formatDateTimeDMY } from "@/lib/utils"
 import { formatDate } from "date-fns"
 import { Calendar, FileText, User, Wallet } from "lucide-react"
+import { useMemo } from "react"
 
 interface TransactionTableProps {
     paginatedTransactions: any[]
+    filteredTransactions: any[] 
     isLoading: boolean
 }
 
-export function TransactionTable({ paginatedTransactions, isLoading }: TransactionTableProps) {
+export function TransactionTable({ paginatedTransactions, filteredTransactions, isLoading }: TransactionTableProps) {
+    const totals = useMemo(() => {
+        if (!filteredTransactions || filteredTransactions.length === 0) {
+            return { credit: 0, debit: 0, balance: 0 };
+        }
+    
+        return filteredTransactions.reduce((acc, transaction) => {
+            let credit = 0;
+            let debit = 0;
+            let balance = 0;
+            
+            try {
+                if (transaction.Credit) {
+                    if (typeof transaction.Credit === 'number') {
+                        credit = transaction.Credit;
+                    } else if (typeof transaction.Credit === 'string') {
+                        credit = parseFloat(transaction.Credit.replace(/\./g, '').replace(',', '.'));
+                    }
+                }
+                
+                if (transaction.Debit) {
+                    if (typeof transaction.Debit === 'number') {
+                        debit = transaction.Debit;
+                    } else if (typeof transaction.Debit === 'string') {
+                        debit = parseFloat(transaction.Debit.replace(/\./g, '').replace(',', '.'));
+                    }
+                }
+                
+                if (transaction.Balance) {
+                    if (typeof transaction.Balance === 'number') {
+                        balance = transaction.Balance;
+                    } else if (typeof transaction.Balance === 'string') {
+                        balance = parseFloat(transaction.Balance.replace(/\./g, '').replace(',', '.'));
+                    }
+                }
+                
+                credit = isNaN(credit) ? 0 : credit;
+                debit = isNaN(debit) ? 0 : debit;
+                balance = isNaN(balance) ? 0 : balance;
+            } catch (error) {
+                console.error("Değer dönüştürme hatası:", error);
+            }
+            
+            return { 
+                credit: acc.credit + credit, 
+                debit: acc.debit + debit, 
+                balance: acc.balance + balance  // Bakiye değerlerini topluyoruz
+            };
+        }, { credit: 0, debit: 0, balance: 0 });
+    }, [filteredTransactions]);
+
+    const formatNumber = (num: number) => {
+        return num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
     return (
         <Card className="border-0 shadow-xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-1 overflow-hidden rounded-xl">
             <div className="rounded-xl border border-gray-100 dark:border-gray-800 h-full flex flex-col">
@@ -94,47 +150,83 @@ export function TransactionTable({ paginatedTransactions, isLoading }: Transacti
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedTransactions.map((transaction) => (
-                                    <TableRow
-                                        key={transaction.id}
-                                        className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
-                                    >
-                                        <TableCell>
-                                            <div className="font-medium">{formatDate(transaction.Date,"dd/MM/yyyy HH:mm")}</div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{transaction.CustomerName}</div>
+                                <>
+                                    {paginatedTransactions.map((transaction) => (
+                                        <TableRow
+                                            key={transaction.id}
+                                            className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                                        >
+                                            <TableCell>
+                                                <div className="font-medium">{formatDate(transaction.Date,"dd/MM/yyyy HH:mm")}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">{transaction.CustomerName}</div>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <div className={cn(
+                                                    "font-medium",
+                                                    parseFloat(transaction.credit) < 0 
+                                                        ? "text-red-600 dark:text-red-400" 
+                                                        : "text-green-600 dark:text-green-400"
+                                                )}>
+                                                    {transaction.Credit ?? 0}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="font-medium text-red-600 dark:text-red-400">
+                                                    {transaction.Debit ?? 0}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <div className={cn(
+                                                    "font-medium",
+                                                    parseFloat(transaction.balance) < 0 
+                                                        ? "text-red-600 dark:text-red-400" 
+                                                        : "text-green-600 dark:text-green-400"
+                                                )}>
+                                                    {transaction.Balance ?? 0}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">{transaction.CheckNo ?? 0}</div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    
+                                    <TableRow className="bg-gray-100 dark:bg-gray-800 font-bold">
+                                        <TableCell colSpan={2} className="text-right">
+                                            <div className="font-bold">TOPLAM:</div>
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <div className={cn(
-                                                "font-medium",
-                                                parseFloat(transaction.credit) < 0 
+                                                "font-bold",
+                                                totals.credit < 0 
                                                     ? "text-red-600 dark:text-red-400" 
                                                     : "text-green-600 dark:text-green-400"
                                             )}>
-                                                {transaction.Credit ?? 0}
+                                                {formatNumber(totals.credit)}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <div className="font-medium text-red-600 dark:text-red-400">
-                                                {transaction.Debit ?? 0}
+                                            <div className="font-bold text-red-600 dark:text-red-400">
+                                                {formatNumber(totals.debit)}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <div className={cn(
-                                                "font-medium",
-                                                parseFloat(transaction.balance) < 0 
+                                                "font-bold",
+                                                totals.balance < 0 
                                                     ? "text-red-600 dark:text-red-400" 
                                                     : "text-green-600 dark:text-green-400"
                                             )}>
-                                                {transaction.Balance ?? 0}
+                                                {formatNumber(totals.balance)}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{transaction.CheckNo ?? 0}</div>
+                                            {/* Boş hücre */}
                                         </TableCell>
                                     </TableRow>
-                                ))
+                                </>
                             )}
                         </TableBody>
                     </Table>
