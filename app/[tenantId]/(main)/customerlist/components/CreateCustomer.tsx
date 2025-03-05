@@ -406,7 +406,7 @@ export default function CreateCustomer() {
                 <div>
                   <Label>Başlangıç</Label>
                   <Input
-                    type="date"
+                    type="number"
                     value={customerData.pointStartDate}
                     onChange={(e) => setCustomerData(prev => ({ ...prev, pointStartDate: e.target.value }))}
                   />
