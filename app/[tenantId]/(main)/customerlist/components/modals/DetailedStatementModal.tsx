@@ -497,10 +497,6 @@ export function DetailedStatementModal({
                                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                                                             AÇILIŞ BAKİYESİ
                                                         </span>
-                                                    ) : item.description === "Bakiye Yükleme" ? (
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-                                                            BAKİYE YÜKLEME
-                                                        </span>
                                                     ) : item.type === "debt" ? (
                                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
                                                             SATIŞ

@@ -42,6 +42,7 @@ interface CustomerTableProps {
     onViewCollectionModal: (customer: any) => void;
     onViewStatement: (customer: any) => void;
     onViewDetailedStatement: (customer: any) => void;
+    onViewCustomerDetails: (customer: any) => void;
     isLoading: boolean;
 }
 
@@ -52,6 +53,7 @@ export function CustomerTable({
     onViewCollectionModal,
     onViewStatement,
     onViewDetailedStatement,
+    onViewCustomerDetails,
     isLoading
 }: CustomerTableProps) {
     const totals = useMemo(() => {
@@ -227,17 +229,17 @@ export function CustomerTable({
                                             "font-medium",
                                             customer.balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
                                         )}>
-                                            {formatCurrency(customer.TotalBonusRemaing)}
+                                            {formatCurrency(customer.TotalBonusRemaing || 0)}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="font-medium text-blue-600 dark:text-blue-400">
-                                            {formatCurrency(customer.TotalBonusEarned)}
+                                            {formatCurrency(customer.TotalBonusEarned || 0)}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="font-medium text-red-600 dark:text-red-400">
-                                            {formatCurrency(customer.TotalBonusUsed)}
+                                            {formatCurrency(customer.TotalBonusUsed || 0)}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">
@@ -264,7 +266,7 @@ export function CustomerTable({
                                                 <DropdownMenuItem onClick={() => onViewDetailedStatement(customer)}>
                                                     <FileSpreadsheet className="h-4 w-4 mr-2 text-amber-600" /> Detaylı Ekstre
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => onViewCustomerDetails(customer)}>
                                                     <Eye className="h-4 w-4 mr-2 text-indigo-600" /> Detayları Görüntüle
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -283,17 +285,17 @@ export function CustomerTable({
                                             "font-bold",
                                             totals.balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
                                         )}>
-                                            {formatCurrency(totals.balance)}
+                                            {formatCurrency(totals.balance || 0)}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="font-bold text-blue-600 dark:text-blue-400">
-                                            {formatCurrency(totals.earned)}
+                                            {formatCurrency(totals.earned || 0)}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="font-bold text-red-600 dark:text-red-400">
-                                            {formatCurrency(totals.used)}
+                                            {formatCurrency(totals.used || 0)}
                                         </div>
                                     </TableCell>
                                     <TableCell>

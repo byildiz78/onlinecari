@@ -25,7 +25,7 @@ import { useCustomersStore } from '@/stores/main/customers-store'
 
 export default function CustomerListPage() {
     const { selectedFilter } = useFilterStore()
-    const { addTab,setActiveTab } = useTabStore()
+    const { addTab, setActiveTab, tabs } = useTabStore()
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null)
@@ -80,20 +80,89 @@ export default function CustomerListPage() {
     }, [setCustomers]);
 
     // Satış işlemi
-    const handleSaleSubmit = () => {
-        if (!transactionAmount || !selectedCustomer) return;
-        setSaleModalOpen(false);
-        setTransactionAmount('');
-        setTransactionDescription('');
+    const handleSaleSubmit = async () => {
+        try {
+            if (!selectedCustomer) return;
+            
+            // API isteği için veriyi hazırla
+            const saleData = {
+                customerKey: selectedCustomer.CustomerKey?.toString() || '',
+                amount: parseFloat(transactionAmount),
+                description: transactionDescription,
+                date: transactionDate
+            };
+            
+            // API isteği gönder
+            // const response = await axios.post('/api/main/sales/create', saleData);
+            
+            // Başarılı olduğunda store'u güncelle
+            const { updateCustomerBalance } = useCustomersStore.getState();
+            updateCustomerBalance(selectedCustomer.CustomerKey?.toString() || '', parseFloat(transactionAmount), true);
+            
+            // Modalı kapat
+            setSaleModalOpen(false);
+            
+            // Başarı mesajı göster
+            toast({
+                title: "Başarılı",
+                description: "Satış işlemi kaydedildi",
+                variant: "default",
+            });
+            
+            // Form alanlarını temizle
+            setTransactionAmount('');
+            setTransactionDescription('');
+        } catch (error) {
+            console.error('Satış işlemi kaydedilirken hata oluştu:', error);
+            toast({
+                title: "Hata!",
+                description: "Satış işlemi kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
+                variant: "destructive",
+            });
+        }
     };
     
     // Tahsilat işlemi
-    const handleCollectionSubmit = () => {
-        if (!transactionAmount || !selectedCustomer) return;
-        // Modal'ı kapat ve formları temizle
-        setCollectionModalOpen(false);
-        setTransactionAmount('');
-        setTransactionDescription('');
+    const handleCollectionSubmit = async () => {
+        try {
+            if (!selectedCustomer) return;
+            
+            // API isteği için veriyi hazırla
+            const collectionData = {
+                customerKey: selectedCustomer.CustomerKey,
+                amount: parseFloat(transactionAmount),
+                description: transactionDescription,
+                date: transactionDate
+            };
+            
+            // API isteği gönder
+            // const response = await axios.post('/api/main/collections/create', collectionData);
+            
+            // Başarılı olduğunda store'u güncelle
+            const { updateCustomerBalance } = useCustomersStore.getState();
+            updateCustomerBalance(selectedCustomer.CustomerKey?.toString() || '', parseFloat(transactionAmount), false);
+            
+            // Modalı kapat
+            setCollectionModalOpen(false);
+            
+            // Başarı mesajı göster
+            toast({
+                title: "Başarılı",
+                description: "Tahsilat işlemi kaydedildi",
+                variant: "default",
+            });
+            
+            // Form alanlarını temizle
+            setTransactionAmount('');
+            setTransactionDescription('');
+        } catch (error) {
+            console.error('Tahsilat işlemi kaydedilirken hata oluştu:', error);
+            toast({
+                title: "Hata!",
+                description: "Tahsilat işlemi kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
+                variant: "destructive",
+            });
+        }
     };
 
     // Modal açma fonksiyonları
@@ -129,15 +198,46 @@ export default function CustomerListPage() {
         setDetailedStatementOpen(true);
     }
 
+    const viewCustomerDetails = (customer: any) => {
+        setSelectedCustomer(customer);
+        const tabId = `edit-customer-${customer.CustomerKey}`;
+        
+        // Sekme zaten açık mı kontrol et
+        const isTabAlreadyOpen = tabs.some(tab => tab.id === tabId);
+        
+        if (!isTabAlreadyOpen) {
+            // Sekme yoksa yeni sekme ekle
+            addTab({
+                id: tabId,
+                title: `${customer.CustomerName}`,
+                lazyComponent: () => import('./components/CreateCustomer').then(module => ({
+                    default: (props: any) => <module.default customerKey={customer.CustomerKey} {...props} />
+                }))
+            });
+        }
+        
+        // Her durumda ilgili sekmeyi aktif yap
+        setActiveTab(tabId);
+    };
+
     const handleNewCustomer = () => {
         const tabId = "Yeni Müşteri";
-        addTab({
-            id: tabId,
-            title: "Yeni Müşteri",
-            lazyComponent: () => import('./components/CreateCustomer').then(module => ({
-                default: (props: any) => <module.default {...props} />
-            }))
-        });
+        
+        // Sekme zaten açık mı kontrol et
+        const isTabAlreadyOpen = tabs.some(tab => tab.id === tabId);
+        
+        if (!isTabAlreadyOpen) {
+            // Sekme yoksa yeni sekme ekle
+            addTab({
+                id: tabId,
+                title: "Yeni Kullanıcı",
+                lazyComponent: () => import('./components/CreateCustomer').then(module => ({
+                    default: (props: any) => <module.default {...props} />
+                }))
+            });
+        }
+        
+        // Her durumda ilgili sekmeyi aktif yap
         setActiveTab(tabId);
     };
 
@@ -178,6 +278,7 @@ export default function CustomerListPage() {
                         onViewCollectionModal={openCollectionModal}
                         onViewStatement={viewStatement}
                         onViewDetailedStatement={viewDetailedStatement}
+                        onViewCustomerDetails={viewCustomerDetails}
                         isLoading={isLoading}
                     />
 
