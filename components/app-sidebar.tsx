@@ -40,6 +40,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 url: "/customerlist"
             },
             {
+                title: "Müşteri Segmentleri",
+                icon: LucideIcons.UserCog,
+                isActive: true,
+                url: "/customersegments"
+            },
+            {
                 title: "Bakiye Raporu",
                 icon: LucideIcons.Wallet,
                 isActive: true,
