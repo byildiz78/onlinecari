@@ -220,7 +220,7 @@ export function CustomerTable({
                                         <div className="font-medium">{customer.CustomerName}</div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="font-medium"> Sorulacak</div>
+                                        <div className="font-medium"> {customer.BranchID} Nolu Şube</div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className={cn(
