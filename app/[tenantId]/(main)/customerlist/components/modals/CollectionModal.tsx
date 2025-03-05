@@ -16,7 +16,7 @@ import {
     Card,
     CardContent
 } from "@/components/ui/card"
-import { Calendar, Receipt } from 'lucide-react'
+import { Calendar, Receipt, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface CollectionModalProps {
@@ -30,6 +30,7 @@ interface CollectionModalProps {
     transactionDate: string;
     setTransactionDate: (value: string) => void;
     onSubmit: () => void;
+    isLoading?: boolean;
 }
 
 export function CollectionModal({
@@ -42,7 +43,8 @@ export function CollectionModal({
     setTransactionDescription,
     transactionDate,
     setTransactionDate,
-    onSubmit
+    onSubmit,
+    isLoading = false
 }: CollectionModalProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,12 +113,15 @@ export function CollectionModal({
                         <div className="col-span-3 relative">
                             <Input
                                 id="collection-date"
-                                type="date"
+                                type="text"
                                 value={transactionDate}
                                 onChange={(e) => setTransactionDate(e.target.value)}
-                                className="border-2 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500/20 transition-all"
+                                className="pl-4 border-2 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500/20 transition-all"
+                                placeholder="YYYY-MM-DD"
+                                disabled
+                                readOnly
                             />
-                            <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                            <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
                         </div>
                     </div>
                     
@@ -138,6 +143,7 @@ export function CollectionModal({
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         className="border-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        disabled={isLoading}
                     >
                         İptal
                     </Button>
@@ -148,9 +154,16 @@ export function CollectionModal({
                             "text-white shadow-lg shadow-blue-500/20 dark:shadow-blue-900/30",
                             "transition-all duration-200 hover:scale-[1.02]"
                         )}
-                        disabled={!transactionAmount}
+                        disabled={!transactionAmount || isLoading}
                     >
-                        Tahsilat Kaydet
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                İşleniyor...
+                            </>
+                        ) : (
+                            "Tahsilat Kaydet"
+                        )}
                     </Button>
                 </DialogFooter>
             </DialogContent>

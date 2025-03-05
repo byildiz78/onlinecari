@@ -21,9 +21,6 @@ interface CreateCustomerProps {
 }
 
 export default function CreateCustomer({ customerKey }: CreateCustomerProps) {
-  const params = useParams()
-  const tenantId = params?.tenantId as string
-
   const {
     customerData,
     setCustomerData,

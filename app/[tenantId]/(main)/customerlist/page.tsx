@@ -45,7 +45,7 @@ export default function CustomerListPage() {
     const [endDate, setEndDate] = useState<string>(
         new Date().toISOString().split('T')[0]
     ) // Bugün
-    
+    const [isSubmitting, setIsSubmitting] = useState(false)
     // Ekstre state'leri
     React.useEffect(() => {
         const fetchUsers = async () => {
@@ -84,6 +84,8 @@ export default function CustomerListPage() {
         try {
             if (!selectedCustomer) return;
             
+            setIsSubmitting(true);
+            
             // API isteği için veriyi hazırla
             const saleData = {
                 customerKey: selectedCustomer.CustomerKey?.toString() || '',
@@ -93,7 +95,7 @@ export default function CustomerListPage() {
             };
             
             // API isteği gönder
-            // const response = await axios.post('/api/main/sales/create', saleData);
+            const response = await axios.post('/api/main/customers/customer-crud/customer-sale', saleData);
             
             // Başarılı olduğunda store'u güncelle
             const { updateCustomerBalance } = useCustomersStore.getState();
@@ -105,7 +107,7 @@ export default function CustomerListPage() {
             // Başarı mesajı göster
             toast({
                 title: "Başarılı",
-                description: "Satış işlemi kaydedildi",
+                description: response.data.message || "Satış işlemi kaydedildi",
                 variant: "default",
             });
             
@@ -119,6 +121,8 @@ export default function CustomerListPage() {
                 description: "Satış işlemi kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
                 variant: "destructive",
             });
+        } finally {
+            setIsSubmitting(false);
         }
     };
     
@@ -127,16 +131,18 @@ export default function CustomerListPage() {
         try {
             if (!selectedCustomer) return;
             
+            setIsSubmitting(true);
+            
             // API isteği için veriyi hazırla
             const collectionData = {
-                customerKey: selectedCustomer.CustomerKey,
+                customerKey: selectedCustomer.CustomerKey?.toString() || '',
                 amount: parseFloat(transactionAmount),
                 description: transactionDescription,
                 date: transactionDate
             };
             
             // API isteği gönder
-            // const response = await axios.post('/api/main/collections/create', collectionData);
+            const response = await axios.post('/api/main/customers/customer-crud/customer-collection', collectionData);
             
             // Başarılı olduğunda store'u güncelle
             const { updateCustomerBalance } = useCustomersStore.getState();
@@ -148,7 +154,7 @@ export default function CustomerListPage() {
             // Başarı mesajı göster
             toast({
                 title: "Başarılı",
-                description: "Tahsilat işlemi kaydedildi",
+                description: response.data.message || "Tahsilat işlemi kaydedildi",
                 variant: "default",
             });
             
@@ -162,12 +168,19 @@ export default function CustomerListPage() {
                 description: "Tahsilat işlemi kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
                 variant: "destructive",
             });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     // Modal açma fonksiyonları
     const openSaleModal = (customer: any) => {
-        setSelectedCustomer(customer);
+        setSelectedCustomer({
+            ...customer,
+            name: customer.CustomerName,
+            cardNo: customer.CardNumber,
+            balance: customer.TotalBonusRemaing || 0
+        });
         setTransactionAmount('');
         setTransactionDescription('');
         setTransactionDate(new Date().toISOString().split('T')[0]); // Bugünün tarihini ayarla
@@ -175,7 +188,12 @@ export default function CustomerListPage() {
     };
 
     const openCollectionModal = (customer: any) => {
-        setSelectedCustomer(customer);
+        setSelectedCustomer({
+            ...customer,
+            name: customer.CustomerName,
+            cardNo: customer.CardNumber,
+            balance: customer.TotalBonusRemaing || 0
+        });
         setTransactionAmount('');
         setTransactionDescription('');
         setTransactionDate(new Date().toISOString().split('T')[0]); // Bugünün tarihini ayarla
@@ -304,6 +322,7 @@ export default function CustomerListPage() {
                 transactionDate={transactionDate}
                 setTransactionDate={setTransactionDate}
                 onSubmit={handleSaleSubmit}
+                isLoading={isSubmitting}
             />
             
             <CollectionModal 
@@ -317,6 +336,7 @@ export default function CustomerListPage() {
                 transactionDate={transactionDate}
                 setTransactionDate={setTransactionDate}
                 onSubmit={handleCollectionSubmit}
+                isLoading={isSubmitting}
             />
             
             <StatementModal 
