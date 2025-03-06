@@ -88,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         BonusTransactionKey
                     ) VALUES (
                         @BranchID,
-                        @OrderDateTime,
+                        GETDATE(),
                         @PaymentKey,
                         @OrderKey,
                         @AmountDue,
@@ -149,7 +149,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             `,
             parameters: {
                 BranchID: 0,
-                OrderDateTime: orderDateTime,
                 PaymentKey: '00000000-0000-0000-0000-000000000000',
                 OrderKey: '00000000-0000-0000-0000-000000000000',
                 AmountDue: collectionData.amount,
