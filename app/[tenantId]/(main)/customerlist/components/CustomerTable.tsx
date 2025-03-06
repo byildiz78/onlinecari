@@ -1,6 +1,7 @@
 "use client"
 
-import { cn, formatCurrency } from "@/lib/utils"
+import { cn, formatCurrency, getCardTypeIconName, getCardTypeLabel, getCardTypeBadgeStyle, getLucideIcon } from "@/lib/utils"
+import React from 'react'
 import {
     Table,
     TableBody,
@@ -18,21 +19,24 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    MoreHorizontal,
+import { 
+    MoreHorizontal, 
+    ArrowUpDown, 
+    Search, 
     Eye,
     ShoppingCart,
     Receipt,
-    FileText,
+    Pencil,
     FileSpreadsheet,
-    CreditCard,
     Tag,
     User,
-    Building2,
-    Wallet,
-    Star,
+    Loader2,
     AlertCircle,
-    Loader2
+    Star,
+    Wallet,
+    Building2,
+    CreditCard,
+    FileText
 } from 'lucide-react'
 import { useMemo } from "react"
 
@@ -215,8 +219,12 @@ export function CustomerTable({
                                         <div className="font-medium">{customer.CardNumber}</div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                            {customer.CardType ? customer.CardType : `Belirtilmemiş`}
+                                        <Badge 
+                                            variant="outline" 
+                                            className={`inline-flex items-center h-5 px-1.5 text-xs gap-0.5 whitespace-nowrap ${getCardTypeBadgeStyle(customer.CardType)}`}
+                                        >
+                                            {React.createElement(getLucideIcon(getCardTypeIconName(customer.CardType)), { className: "h-3 w-3" })}
+                                            <span className="truncate max-w-[80px]">{getCardTypeLabel(customer.CardType)}</span>
                                         </Badge>
                                     </TableCell>
                                     <TableCell>

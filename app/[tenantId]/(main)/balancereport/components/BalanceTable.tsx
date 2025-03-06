@@ -3,9 +3,11 @@
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Phone, Calendar, Wallet, CreditCard } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, getCardTypeBadgeStyle, getCardTypeIconName, getCardTypeLabel, getLucideIcon } from "@/lib/utils"
 import { CustomLoader } from "@/components/ui/custom-loader"
 import { useMemo } from "react"
+import { Badge } from "@/components/ui/badge"
+import React from "react"
 
 interface BalanceTableProps {
     paginatedBalances: any[]
@@ -190,20 +192,20 @@ export function BalanceTable({ paginatedBalances, filteredBalances, isLoading }:
                                             <TableCell className="text-center">
                                                 <div className="font-medium">{balance.StartingBalance ?? 0}</div>
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-center">
                                                 <div className="font-medium text-red-600 dark:text-red-400">
                                                     {balance.Debt}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-center">
                                                 <div className="font-medium text-green-600 dark:text-green-400">
                                                     {balance.Credit}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-center">
                                                 <div className={cn(
                                                     "font-medium",
-                                                    parseFloat((balance.Balance && typeof balance.Balance === 'string') ? 
+                                                    parseFloat((balance.Balance && typeof balance.Balance === 'string') ?
                                                         balance.Balance.replace(/\./g, '').replace(',', '.') : '0') < 0
                                                         ? "text-red-600 dark:text-red-400"
                                                         : "text-green-600 dark:text-green-400"
@@ -217,27 +219,33 @@ export function BalanceTable({ paginatedBalances, filteredBalances, isLoading }:
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-medium">{balance.CardType ? balance.CardType : "Belirtilmemiş"}</div>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`inline-flex items-center h-5 px-1.5 text-xs gap-0.5 whitespace-nowrap ${getCardTypeBadgeStyle(balance.CardType)}`}
+                                                >
+                                                    {React.createElement(getLucideIcon(getCardTypeIconName(balance.CardType)), { className: "h-3 w-3" })}
+                                                    <span className="truncate max-w-[80px]">{getCardTypeLabel(balance.CardType)}</span>
+                                                </Badge>
                                             </TableCell>
                                         </TableRow>
                                     ))}
-                                    
+
                                     {/* Toplam Satırı */}
                                     <TableRow className="bg-gray-100 dark:bg-gray-800 font-bold">
                                         <TableCell colSpan={3} className="text-right">
                                             <div className="font-bold">TOPLAM:</div>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-center">
                                             <div className="font-bold text-red-600 dark:text-red-400">
                                                 {formatNumber(totals.debt)}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-center">
                                             <div className="font-bold text-green-600 dark:text-green-400">
                                                 {formatNumber(totals.credit)}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-center">
                                             <div className={cn(
                                                 "font-bold",
                                                 totals.balance < 0
