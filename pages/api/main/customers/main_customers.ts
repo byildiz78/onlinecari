@@ -14,7 +14,7 @@ export default async function handler(
     try {
         const tenantId = extractTenantId(req.headers.referer);
         const query = `
-              SELECT 
+              SELECT DISTINCT
             CustomerKey,
             CustomerName,
             CustomerFullName,
@@ -55,7 +55,6 @@ export default async function handler(
             END AS CreditSatusID,
             DiscountPercent,
             SpecialBonusPercent,
-            BonusStartupValue,
             CardNumber,
             -- CardType alanını standardize et
             CASE 

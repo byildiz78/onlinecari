@@ -68,7 +68,6 @@ export default async function handler(
             END AS CreditSatusID,
             DiscountPercent,
             SpecialBonusPercent,
-            BonusStartupValue,
             CardNumber,
             -- CardType alanını standardize et
             CASE 

@@ -3,7 +3,7 @@ import { twMerge } from "tailwind-merge"
 import { DatabaseResponse } from "@/types/dataset";
 import { Dataset } from "@/lib/dataset";
 import * as LucideIcons from "lucide-react";
-import { DivideIcon as LucideIcon } from "lucide-react";
+import React from 'react'
 
 interface FormatNumberOptions {
     decimals?: number;
@@ -21,10 +21,10 @@ interface IntlFormatNumberOptions {
     currency?: string;
 }
 
-export const getLucideIcon = (iconName: string | undefined, defaultIcon?: LucideIcon): LucideIcon => {
+export const getLucideIcon = (iconName: string | undefined, defaultIcon?: LucideIcons.Icon): LucideIcons.Icon => {
     if (!iconName) return defaultIcon || LucideIcons.HelpCircle;
     
-    const Icon = LucideIcons[iconName as keyof typeof LucideIcons] as LucideIcon;
+    const Icon = LucideIcons[iconName as keyof typeof LucideIcons] as LucideIcons.Icon;
     return Icon || defaultIcon || LucideIcons.HelpCircle;
 };
 
@@ -140,3 +140,45 @@ export function extractTenantId(referer: string | undefined): string {
         return process.env.IS_BOLT === "1" ? process.env.BOLTTENANT || "" : "";
     }
 }
+
+// Kart tipi için ikon adını döndüren fonksiyon
+export const getCardTypeIconName = (cardType: string | undefined): string => {
+    switch (cardType?.toLowerCase()) {
+        case 'meal':
+            return 'CreditCard';
+        case 'gift':
+            return 'Gift';
+        case 'corporate':
+            return 'Building2';
+        default:
+            return 'HelpCircle';
+    }
+};
+
+// Kart tipi için etiket döndüren fonksiyon
+export const getCardTypeLabel = (cardType: string | undefined): string => {
+    switch (cardType?.toLowerCase()) {
+        case 'meal':
+            return 'Yemek Kartı';
+        case 'gift':
+            return 'Hediye Kartı';
+        case 'corporate':
+            return 'Kurumsal Kart';
+        default:
+            return 'Belirtilmemiş';
+    }
+};
+
+// Kart tipi için badge stilini döndüren fonksiyon
+export const getCardTypeBadgeStyle = (cardType: string | undefined): string => {
+    switch (cardType?.toLowerCase()) {
+        case 'meal':
+            return 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800';
+        case 'gift':
+            return 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 border-purple-200 dark:border-purple-800';
+        case 'corporate':
+            return 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+        default:
+            return 'bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 border-gray-200 dark:border-gray-800';
+    }
+};

@@ -128,7 +128,7 @@ export function TransactionTable({ paginatedTransactions, filteredTransactions, 
                                         <span className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center">
                                             <FileText className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
                                         </span>
-                                        Çek No
+                                        Açıklama / Çek No
                                     </div>
                                 </TableHead>
                             </TableRow>

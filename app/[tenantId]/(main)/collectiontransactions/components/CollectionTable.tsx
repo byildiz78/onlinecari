@@ -139,7 +139,7 @@ export function CollectionTable({ paginatedTransactions, filteredTransactions, i
                                                 <div className="font-medium">{transaction.SaleType}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-medium">{transaction.PaymentType ?? "Boş"}</div>
+                                                <div className="font-medium">{transaction.PaymentType ?? "Merkezi Tahsilat"}</div>
                                             </TableCell>
                                         </TableRow>
                                     ))}
