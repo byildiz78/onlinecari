@@ -15,12 +15,15 @@ import { PointsSection } from "./sections/PointsSection"
 import { CardInfoSection } from "./sections/CardInfoSection"
 import { NotesSection } from "./sections/NotesSection"
 import { CustomLoader } from "@/components/ui/custom-loader"
+import { useCustomersStore } from "@/stores/main/customers-store"
 
 interface CreateCustomerProps {
   customerKey?: string;
 }
 
 export default function CreateCustomer({ customerKey }: CreateCustomerProps) {
+  const { customers } = useCustomersStore()
+  
   const {
     customerData,
     setCustomerData,
@@ -40,9 +43,12 @@ export default function CreateCustomer({ customerKey }: CreateCustomerProps) {
     if (customerKey) {
       setIsEditMode(true)
 
-      // Her sekme değişikliğinde API'den veri çek
-      fetchCustomerByKey(customerKey)
-      hasInitializedRef.current = true;
+      // Eğer daha önce bu component için API çağrısı yapılmadıysa
+      if (!hasInitializedRef.current) {
+        // Müşteri verilerini getir (useCustomerForm içinde artık store'dan kontrol ediliyor)
+        fetchCustomerByKey(customerKey)
+        hasInitializedRef.current = true;
+      }
     } else {
       // Yeni müşteri oluşturma modu
       setIsEditMode(false)
