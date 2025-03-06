@@ -40,28 +40,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 url: "/customerlist"
             },
             {
-                title: "Bakiye Raporu",
-                icon: LucideIcons.Wallet,
+                title: "Müşteri Segmentleri",
+                icon: LucideIcons.UserCog,
                 isActive: true,
-                url: "/balancereport"
+                url: "/customersegments"
             },
             {
-                title: "İşlem Raporu",
+                title: "Raporlar",
                 icon: LucideIcons.FileText,
                 isActive: true,
-                url: "/transactionreport"
-            },
-            {
-                title: "Satış İşlemleri",
-                icon: LucideIcons.ShoppingCart,
-                isActive: true,
-                url: "/salestransactions"
-            },
-            {
-                title: "Tahsilat İşlemleri",
-                icon: LucideIcons.Receipt,
-                isActive: true,
-                url: "/collectiontransactions"
+                expanded: true,
+                items: [
+                    {
+                        title: "Bakiye Raporu",
+                        icon: LucideIcons.Wallet,
+                        isActive: true,
+                        url: "/balancereport"
+                    },
+                    {
+                        title: "İşlem Raporu",
+                        icon: LucideIcons.FileText,
+                        isActive: true,
+                        url: "/transactionreport"
+                    },
+                    {
+                        title: "Satış İşlemleri",
+                        icon: LucideIcons.ShoppingCart,
+                        isActive: true,
+                        url: "/salestransactions"
+                    },
+                    {
+                        title: "Tahsilat İşlemleri",
+                        icon: LucideIcons.Receipt,
+                        isActive: true,
+                        url: "/collectiontransactions"
+                    }
+                ]
             }
         ];
         return items;
@@ -88,20 +102,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 plan: "Account Manager",
                 className: "bg-blue-200",
             }
-            // {
-            //     name: "robotPOS Enterprise",
-            //     href: "/[tenantId]/(main)/dashboard",
-            //     logo: `${process.env.NEXT_PUBLIC_BASEPATH || ''}/images/Data.png`,
-            //     plan: "Data Manager",
-            //     className: "bg-blue-200",
-            // },
-            // {
-            //     name: "robotPOS Enterprise",
-            //     href: `${process.env.PROJECT_BASE_URL || ''}/operationmanager/${tenantId}`,
-            //     logo: `${process.env.NEXT_PUBLIC_BASEPATH || ''}/images/Audit.png`,
-            //     plan: "Operation Manager",
-            //     className: "bg-blue-200",
-            // }
         ],
         projects: [],
     }), [userData, tenantId]);
