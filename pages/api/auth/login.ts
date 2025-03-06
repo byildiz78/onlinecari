@@ -52,7 +52,21 @@ export default async function handler(
         const encryptedpass = encrypt(password);
         const instance = Dataset.getInstance();
         
-        const query = "SELECT TOP 1 UserID, UserName,Email,CONCAT(Name,' ',SurName) as Name,Category as UserCategory FROM Efr_Users WHERE UserName = @username AND EncryptedPass = @password AND IsActive=1";
+        const query =  `
+            SELECT TOP 1
+                id as UserID,
+                username as UserName,
+                email as Email,
+                CONCAT(name,' ',surname) as Name,
+                type as UserCategory,
+                [schema] as [Schema],
+                phone_number as PhoneNumber
+            FROM dbo.bonus_users WITH (NOLOCK)
+            WHERE 1=1
+                AND username = @username 
+                AND password = @password 
+                AND active = 1
+        `;
 
         const response = await instance.executeQuery<{ UserID: number; UserName: string, Email: string, Name: string, UserCategory: string }[]>({
             query,
@@ -62,6 +76,7 @@ export default async function handler(
             },
             req
         });
+
         const user = response[0]
         if (user) {
             let tokenPayload = {

@@ -1,6 +1,6 @@
 "use client"
 
-import { cn, formatCurrency } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import {
     Table,
     TableBody,
@@ -20,33 +20,19 @@ import {
 import {
     MoreHorizontal,
     Eye,
-    ShoppingCart,
-    Receipt,
-    FileText,
-    FileSpreadsheet,
-    CreditCard,
-    Tag,
-    User,
-    Building2,
-    Wallet,
-    Star,
-    AlertCircle
+    Edit,
+    Trash2,
+    Users,
+    Settings,
+    Filter
 } from 'lucide-react'
 
 interface CustomerTableProps {
     customers: any[];
-    onViewSaleModal: (customer: any) => void;
-    onViewCollectionModal: (customer: any) => void;
-    onViewStatement: (customer: any) => void;
-    onViewDetailedStatement: (customer: any) => void;
 }
 
 export function CustomerTable({
-    customers,
-    onViewSaleModal,
-    onViewCollectionModal,
-    onViewStatement,
-    onViewDetailedStatement
+    customers
 }: CustomerTableProps) {
     return (
         <div className="flex-1 overflow-auto
@@ -60,60 +46,36 @@ export function CustomerTable({
             <Table className="relative w-full">
                 <TableHeader className="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm z-10">
                     <TableRow className="hover:bg-transparent border-b border-gray-100 dark:border-gray-800">
-                        <TableHead className="w-[10%]">
-                            <div className="flex items-center gap-2">
-                                <span className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center">
-                                    <CreditCard className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                                </span>
-                                Kart No
-                            </div>
-                        </TableHead>
-                        <TableHead className="w-[15%]">
-                            <div className="flex items-center gap-2">
-                                <span className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                                    <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                </span>
-                                Kart Tipi
-                            </div>
-                        </TableHead>
                         <TableHead className="w-[20%]">
                             <div className="flex items-center gap-2">
-                                <span className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-                                    <User className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                <span className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                                    <Filter className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                 </span>
-                                Müşteri Adı
+                                Segment Adı
                             </div>
                         </TableHead>
                         <TableHead className="w-[15%]">
                             <div className="flex items-center gap-2">
                                 <span className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                                    <Building2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                    <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                                 </span>
-                                Şube
+                                Müşteri Sayısı
                             </div>
                         </TableHead>
-                        <TableHead className="w-[10%] text-right">
-                            <div className="flex items-center justify-end gap-2">
-                                <span className="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-900/50 flex items-center justify-center">
-                                    <Wallet className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        <TableHead className="w-[20%]">
+                            <div className="flex items-center gap-2">
+                                <span className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                                    <Settings className="h-4 w-4 text-green-600 dark:text-green-400" />
                                 </span>
-                                Bakiye
+                                Kurallar
                             </div>
                         </TableHead>
-                        <TableHead className="w-[10%] text-right">
-                            <div className="flex items-center justify-end gap-2">
-                                <span className="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center">
-                                    <Star className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                        <TableHead className="w-[15%] text-center">
+                            <div className="flex items-center justify-center gap-2">
+                                <span className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                                    <Filter className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                 </span>
-                                Limit
-                            </div>
-                        </TableHead>
-                        <TableHead className="w-[10%] text-right">
-                            <div className="flex items-center justify-end gap-2">
-                                <span className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
-                                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                                </span>
-                                Borç
+                                Durum
                             </div>
                         </TableHead>
                         <TableHead className="w-[5%] text-center">
@@ -127,75 +89,80 @@ export function CustomerTable({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {customers.map((customer) => (
-                        <TableRow
-                            key={customer.id}
-                            className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
-                        >
-                            <TableCell>
-                                <div className="font-medium">{customer.cardNo}</div>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                    {customer.cardType}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <div className="font-medium">{customer.name}</div>
-                            </TableCell>
-                            <TableCell>
-                                <div className="font-medium">{customer.branch}</div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <div className={cn(
-                                    "font-medium",
-                                    customer.balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
-                                )}>
-                                    {formatCurrency(customer.balance)}
+                    {customers.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={5} className="h-[400px] text-center">
+                                <div className="flex flex-col items-center justify-center h-full">
+                                    <Filter className="h-12 w-12 text-gray-400 mb-4" />
+                                    <div className="text-lg font-medium text-gray-600 dark:text-gray-300">Henüz Segment Oluşturulmamış</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">Yeni bir segment oluşturmak için "Yeni Segment" butonunu kullanın.</div>
                                 </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <div className="font-medium text-blue-600 dark:text-blue-400">
-                                    {formatCurrency(customer.credit)}
-                                </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <div className="font-medium text-red-600 dark:text-red-400">
-                                    {formatCurrency(customer.debt)}
-                                </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                        >
-                                            <MoreHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-52">
-                                        <DropdownMenuItem onClick={() => onViewSaleModal(customer)}>
-                                            <ShoppingCart className="h-4 w-4 mr-2 text-green-600" /> Satış Girişi
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onViewCollectionModal(customer)}>
-                                            <Receipt className="h-4 w-4 mr-2 text-blue-600" /> Tahsilat Girişi
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onViewStatement(customer)}>
-                                            <FileText className="h-4 w-4 mr-2 text-purple-600" /> Ekstre
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onViewDetailedStatement(customer)}>
-                                            <FileSpreadsheet className="h-4 w-4 mr-2 text-amber-600" /> Detaylı Ekstre
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            <Eye className="h-4 w-4 mr-2 text-indigo-600" /> Detayları Görüntüle
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
                             </TableCell>
                         </TableRow>
-                    ))}
+                    ) : (
+                        customers.map((segment) => (
+                            <TableRow
+                                key={segment.id}
+                                className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                            >
+                                <TableCell>
+                                    <div className="font-medium">{segment.name}</div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="font-medium">{segment.customerCount}</div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex flex-wrap gap-1">
+                                        {segment.rules.map((rule: string, index: number) => (
+                                            <Badge 
+                                                key={index}
+                                                variant="outline" 
+                                                className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                                            >
+                                                {rule}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <Badge 
+                                        variant="outline"
+                                        className={cn(
+                                            segment.isActive 
+                                                ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800"
+                                                : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-800"
+                                        )}
+                                    >
+                                        {segment.isActive ? "Aktif" : "Pasif"}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            >
+                                                <MoreHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-52">
+                                            <DropdownMenuItem>
+                                                <Eye className="h-4 w-4 mr-2 text-indigo-600" /> Detayları Görüntüle
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem>
+                                                <Edit className="h-4 w-4 mr-2 text-blue-600" /> Düzenle
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-red-600 dark:text-red-400">
+                                                <Trash2 className="h-4 w-4 mr-2" /> Sil
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    )}
                 </TableBody>
             </Table>
         </div>

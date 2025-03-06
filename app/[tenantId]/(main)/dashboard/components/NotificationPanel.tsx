@@ -1,18 +1,16 @@
 import { motion } from "framer-motion";
 import PulseLoader from "react-spinners/PulseLoader";
-import { Bell, CheckCircle2, Ban, Tag, AlertCircle, Clock, RefreshCw, ClipboardCheck, MapPin, CalendarDays, ReceiptText, CreditCard } from "lucide-react";
+import { Bell, CheckCircle2, Ban, Tag, AlertCircle, ArrowUpRight, Clock, RefreshCw, ClipboardCheck, MapPin, CalendarDays, ReceiptText, ShoppingCart, Wallet, HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { NotificationType } from "@/types/tables";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFilterStore } from "@/stores/filters-store";
-import axios from "@/lib/axios";
-
-import { SettingsMenu } from "@/app/[tenantId]/(main)/dashboard/components/settings-menu";
 import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useTabStore } from "@/stores/tab-store";
-import { mockNotifications } from "../data/mock-data";
+import axios from "@/lib/axios";
 
 interface NotificationStyle {
     icon: typeof CheckCircle2;
@@ -21,91 +19,41 @@ interface NotificationStyle {
     bgColor: string;
 }
 
-interface Settings {
-    minDiscountAmount: number;
-    minCancelAmount: number;
-    minSaleAmount: number;
-}
-
 interface NotificationPanelProps {
-    settings: Settings;
     refreshTrigger: number;
 }
 
-const DEFAULT_SETTINGS: Settings = {
-    minDiscountAmount: 0,
-    minCancelAmount: 0,
-    minSaleAmount: 0
-};
-
-const NOTIFICATION_STYLES: Record<NotificationType | string, NotificationStyle> = {
-    sale: {
-        icon: CheckCircle2,
-        color: "text-emerald-500",
-        borderColor: "border-emerald-500/30",
-        bgColor: "bg-emerald-50 dark:bg-emerald-500/10",
-    },
-    discount: {
-        icon: Tag,
-        color: "text-blue-500",
-        borderColor: "border-blue-500/30",
-        bgColor: "bg-blue-50 dark:bg-blue-500/10",
-    },
-    cancel: {
-        icon: Ban,
-        color: "text-rose-500",
-        borderColor: "border-rose-500/30",
-        bgColor: "bg-rose-50 dark:bg-rose-500/10",
-    },
-    alert: {
-        icon: AlertCircle,
-        color: "text-amber-500",
-        borderColor: "border-amber-500/30",
-        bgColor: "bg-amber-50 dark:bg-amber-500/10",
-    },
-    "Satış İşlemi": {
-        icon: ReceiptText,
-        color: "text-emerald-500",
-        borderColor: "border-emerald-500/30",
-        bgColor: "bg-emerald-50 dark:bg-emerald-500/10",
-    },
-    "Tahsilat": {
-        icon: CreditCard,
-        color: "text-blue-500",
-        borderColor: "border-blue-500/30",
-        bgColor: "bg-blue-50 dark:bg-blue-500/10",
-    },
-};
-
 interface Notification {
-    autoId: number;
-    branchName: string;
-    formName: string;
-    orderDateTime: string;
-    type: string;
-    amount?: number;
-    customer?: string;
-}
+    Debit: number;
+    BranchName: number;
+    CustomerName: string;
+    Date: string;
+    CheckNo: number;
+    SaleType?: string;
+ }
 
-const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const localHours = date.getHours().toString().padStart(2, '0');
-    const localMinutes = date.getMinutes().toString().padStart(2, '0');
-    return `${localHours}:${localMinutes}`;
-};
-
-const formatCurrency = (amount: number | undefined) => {
-    if (amount === undefined) return "";
-    return new Intl.NumberFormat('tr-TR', { 
-        style: 'currency', 
-        currency: 'TRY',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2 
-    }).format(amount);
+const SALE_TYPE_STYLES: Record<string, NotificationStyle> = {
+    Sale: {
+        icon: ShoppingCart,
+        color: "text-blue-600",
+        borderColor: "border-blue-500/30",
+        bgColor: "bg-blue-50 dark:bg-blue-900/20",
+    },
+    Collection: {
+        icon: Wallet,
+        color: "text-emerald-600",
+        borderColor: "border-emerald-500/30",
+        bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
+    },
+    Other: {
+        icon: HelpCircle,
+        color: "text-gray-600",
+        borderColor: "border-gray-500/30",
+        bgColor: "bg-gray-50 dark:bg-gray-800",
+    },
 };
 
 export default function NotificationPanel({
-    settings,
     refreshTrigger
 }: NotificationPanelProps) {
     const { selectedFilter } = useFilterStore();
@@ -115,19 +63,9 @@ export default function NotificationPanel({
     const [error, setError] = useState<string | null>(null);
     const [hasFetched, setHasFetched] = useState(false);
     const { activeTab } = useTabStore();
-    const [tempSettings, setTempSettings] = useState<Settings>(settings);
-    const [useMockData, setUseMockData] = useState(false);
 
-    // Update tempSettings when settings prop changes
-    useEffect(() => {
-        if (settings && JSON.stringify(tempSettings) !== JSON.stringify(settings)) {
-            setTempSettings(settings);
-        }
-    }, [settings]);
 
     const fetchNotifications = useCallback(async (isInitial = false) => {
-        if (!selectedFilter.branches.length) return;
-
         try {
             if (isInitial) {
                 setLoading(true);
@@ -136,54 +74,32 @@ export default function NotificationPanel({
             }
             setError(null);
 
-            try {
-                const { data } = await axios.post('/api/notifications', {
-                    branches: selectedFilter.branches.map(item => item.BranchID),
-                    ...settings
-                });
+            const { data } = await axios.get('/api/notifications');
 
-                setNotifications(Array.isArray(data) ? data : []);
-                setHasFetched(true);
-                setUseMockData(false);
-            } catch (error) {
-                console.error('Error fetching notifications, using mock data:', error);
-                setNotifications(mockNotifications);
-                setHasFetched(true);
-                setUseMockData(true);
-            }
-            
+            setNotifications(Array.isArray(data) ? data : []);
+            setHasFetched(true);
         } catch (err) {
-            console.error('Error in fetchNotifications:', err);
+            console.error('Error fetching notifications:', err);
             setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
-            setNotifications(mockNotifications);
-            setUseMockData(true);
         } finally {
             setLoading(false);
             setIntervalLoading(false);
         }
-    }, [selectedFilter.branches, settings]);
-
-    // Initial fetch when settings or branches change
-    useEffect(() => {
-        if (activeTab === "dashboard" && selectedFilter.branches.length > 0 && settings && !hasFetched) {
-            fetchNotifications(true);
-        }
-    }, [activeTab, selectedFilter.branches, settings, fetchNotifications, hasFetched]);
+    },[]);
 
     // Handle refreshes based on refreshTrigger
     useEffect(() => {
-        if (activeTab === "dashboard" && selectedFilter.branches.length > 0 && settings && refreshTrigger > 0) {
+        if (activeTab === "dashboard" && refreshTrigger > 0) {
             fetchNotifications(false);
         }
-    }, [refreshTrigger, activeTab, selectedFilter.branches, settings, fetchNotifications]);
+    }, [refreshTrigger, activeTab , fetchNotifications]);
 
-    // Eğer hiç veri yoksa mock verileri kullan
+    // İlk yüklemede bildirimleri çek
     useEffect(() => {
-        if (notifications.length === 0 && !loading && !intervalLoading) {
-            setNotifications(mockNotifications);
-            setUseMockData(true);
+        if (activeTab === "dashboard" && !hasFetched) {
+            fetchNotifications(true);
         }
-    }, [notifications, loading, intervalLoading]);
+    }, [activeTab, hasFetched, fetchNotifications]);
 
     const renderNotification = useCallback((notification: Notification, index: number, isLastItem: boolean) => {
         const gradients = {
@@ -208,11 +124,11 @@ export default function NotificationPanel({
         const gradient = gradients[gradientIndex as keyof typeof gradients]
         const bgGradient = bgGradients[gradientIndex as keyof typeof bgGradients]
 
-        const NotificationIcon = NOTIFICATION_STYLES[notification.formName]?.icon || AlertCircle;
+        const saleTypeStyle = notification.SaleType ? SALE_TYPE_STYLES[notification.SaleType] : SALE_TYPE_STYLES.Other;
 
         return (
             <Card
-                key={notification.autoId}
+                key={notification.CheckNo}
                 className={cn(
                     "group relative overflow-hidden transition-all duration-300",
                     "hover:shadow-lg hover:shadow-gray-200/40 dark:hover:shadow-gray-900/40",
@@ -223,8 +139,6 @@ export default function NotificationPanel({
                     "mb-4"
                 )}
             >
-
-
                 <div className="relative">
                     <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b opacity-70"
                         style={{
@@ -238,22 +152,34 @@ export default function NotificationPanel({
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <span className="font-medium text-[13px] text-gray-900 dark:text-gray-100 truncate cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
-                                            {notification.branchName || 'İsimsiz'}
+                                            {notification.BranchName || 'İsimsiz'} Nolu Şube
                                         </span>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p className="text-sm">{notification.branchName}</p>
+                                        <p className="text-sm">{notification.BranchName} Nolu Şube</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <div className="flex items-center gap-1.5 flex-shrink-0">                
                                 <span className={cn(
                                     "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium tracking-wide",
                                     "bg-gradient-to-r",
                                     gradient,
                                     "text-white shadow-sm"
                                 )}>
-                                    {notification.formName}
+                                    {notification.SaleType && (
+                                        <>
+                                            <saleTypeStyle.icon className="w-2.5 h-2.5 mr-1" />
+                                            {notification.SaleType === "Sale" ? (
+                                                <>Satış</>
+                                            ) : notification.SaleType === "Collection" ? (
+                                                <>Tahsilat</>
+                                            ) : (
+                                                <>Diğer</>
+                                            )}
+                                            <span className="mx-1">•</span>
+                                        </>
+                                    )}
                                 </span>
                             </div>
                         </div>
@@ -266,7 +192,7 @@ export default function NotificationPanel({
                                 gradient,
                                 "text-white flex items-center justify-center"
                             )}>
-                                <NotificationIcon className="h-4 w-4" />
+                                <ReceiptText className="h-4 w-4" />
                             </Avatar>
 
                             <div className="flex-1 min-w-0">
@@ -274,40 +200,34 @@ export default function NotificationPanel({
                                     <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
                                         <div className="flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
-                                            <span>{formatTime(notification.orderDateTime)}</span>
+                                            <span>{new Date(notification.Date).toLocaleTimeString('tr-TR', {
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}</span>
                                         </div>
                                         <span className="mx-1">•</span>
                                         <div className="flex items-center gap-1">
                                             <CalendarDays className="w-3 h-3" />
-                                            <span>{new Date(notification.orderDateTime).toLocaleDateString('tr-TR', {
+                                            <span>{new Date(notification.Date).toLocaleDateString('tr-TR', {
                                                 day: 'numeric',
                                                 month: 'long'
                                             })}</span>
                                         </div>
                                     </div>
 
-                                    {useMockData && notification.customer && (
-                                        <div className="text-[13px] font-medium text-gray-800 dark:text-gray-200 mb-1">
-                                            {notification.customer}
-                                        </div>
-                                    )}
+                                    <div className="text-[13px] font-medium text-gray-800 dark:text-gray-200 mb-1">
+                                        {notification.CustomerName}
+                                    </div>
 
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
                                             <ClipboardCheck className="w-3 h-3" />
-                                            <span>{notification.type === "1" ? 'Form Oluşturuldu' : 'Form Güncellendi'}</span>
+                                            <span>Çek No: {notification.CheckNo}</span>
                                         </div>
                                         
-                                        {useMockData && notification.amount !== undefined && (
-                                            <div className={cn(
-                                                "text-[13px] font-medium",
-                                                notification.formName === "Satış İşlemi" 
-                                                    ? "text-emerald-600 dark:text-emerald-400" 
-                                                    : "text-blue-600 dark:text-blue-400"
-                                            )}>
-                                                {formatCurrency(notification.amount)}
-                                            </div>
-                                        )}
+                                        <div className="text-[13px] font-medium text-emerald-600 dark:text-emerald-400">
+                                            {formatCurrency(notification.Debit)}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -316,7 +236,7 @@ export default function NotificationPanel({
                 </div>
             </Card>
         )
-    }, [useMockData]);
+    }, []);
 
     return (
         <div className="flex flex-col h-full">
@@ -343,7 +263,7 @@ export default function NotificationPanel({
                             <p className="text-sm">Bildirimleri yenile</p>
                         </TooltipContent>
                     </Tooltip>
-                    <SettingsMenu settings={tempSettings} setSettings={setTempSettings} />
+                    {/* <SettingsMenu settings={tempSettings} setSettings={setTempSettings} /> */}
                 </div>
             </div>
 

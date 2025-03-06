@@ -3,11 +3,8 @@
 import { Button } from "@/components/ui/button"
 import { exportToExcel } from "@/lib/export-utils"
 
-interface CollectionHeaderProps {
-    filteredTransactions: any[]
-}
 
-export function CollectionHeader({ filteredTransactions }: CollectionHeaderProps) {
+export function CollectionHeader() {
     const formatCollectionData = (data: any[]) => {
         return data.map(item => ({
             'Tarih': item.date,
@@ -28,12 +25,6 @@ export function CollectionHeader({ filteredTransactions }: CollectionHeaderProps
                     Tahsilat işlemlerini takip edin
                 </p>
             </div>
-            <Button
-                onClick={() => exportToExcel(formatCollectionData(filteredTransactions), 'tahsilat-islemleri')}
-                className="bg-green-600 hover:bg-green-700 text-white"
-            >
-                Excel'e Aktar
-            </Button>
         </div>
     )
 }

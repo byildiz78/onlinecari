@@ -19,6 +19,9 @@ import { DetailedStatementModal } from './components/modals/DetailedStatementMod
 
 // Veri
 import { customers } from './data/mock-data'
+import { toast } from '@/components/ui/toast/use-toast'
+import axios from '@/lib/axios'
+import { useCustomersStore } from '@/stores/main/customers-store'
 
 export default function CustomerListPage() {
     const { selectedFilter } = useFilterStore()
@@ -26,18 +29,16 @@ export default function CustomerListPage() {
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null)
-    
+    const { customers, setCustomers, selectedCustomer, setSelectedCustomer } = useCustomersStore();
+    const [isLoading, setIsLoading] = React.useState(true);
     // Modal state'leri
     const [saleModalOpen, setSaleModalOpen] = useState(false)
     const [collectionModalOpen, setCollectionModalOpen] = useState(false)
     const [statementPreviewOpen, setStatementPreviewOpen] = useState(false)
     const [detailedStatementOpen, setDetailedStatementOpen] = useState(false)
-    const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
     const [transactionAmount, setTransactionAmount] = useState('')
     const [transactionDescription, setTransactionDescription] = useState('')
     const [transactionDate, setTransactionDate] = useState<string>(new Date().toISOString().split('T')[0]) // YYYY-MM-DD format
-    
-    // Ekstre state'leri
     const [startDate, setStartDate] = useState<string>(
         new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0]
     ) // 1 ay öncesi
@@ -45,30 +46,42 @@ export default function CustomerListPage() {
         new Date().toISOString().split('T')[0]
     ) // Bugün
     
-    // Ekstre filtreleme işlemleri
-    const filterStatementByDateRange = (startDate: string, endDate: string, data: any[]) => {
-        return data.filter(item => {
-            // "DD.MM.YYYY" formatını "YYYY-MM-DD" formatına çevirelim
-            const parts = item.date.split('.');
-            const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            
-            return formattedDate >= startDate && formattedDate <= endDate;
-        });
-    };
+    // Ekstre state'leri
+    React.useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                setIsLoading(true);
+                const response = await axios.get('/api/main/customers/main_customers');
+                setCustomers(response.data);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                
+                // API'den 404 hatası geldiğinde (veri bulunamadı)
+                if (error.response && error.response.status === 404) {
+                    toast({
+                        title: "Bilgi",
+                        description: "Herhangi bir müşteri kaydı bulunamadı.",
+                        variant: "default",
+                    });
+                } else {
+                    // Diğer hatalar için
+                    toast({
+                        title: "Hata!",
+                        description: "Müşteri listesi yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.",
+                        variant: "destructive",
+                    });
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, [setCustomers]);
 
     // Satış işlemi
     const handleSaleSubmit = () => {
         if (!transactionAmount || !selectedCustomer) return;
-        
-        // Burada gerçek API çağrısı yapılacak
-        console.log("Satış kaydedildi:", {
-            customerId: selectedCustomer.id,
-            amount: parseFloat(transactionAmount),
-            description: transactionDescription,
-            date: transactionDate
-        });
-        
-        // Modal'ı kapat ve formları temizle
         setSaleModalOpen(false);
         setTransactionAmount('');
         setTransactionDescription('');
@@ -77,15 +90,6 @@ export default function CustomerListPage() {
     // Tahsilat işlemi
     const handleCollectionSubmit = () => {
         if (!transactionAmount || !selectedCustomer) return;
-        
-        // Burada gerçek API çağrısı yapılacak
-        console.log("Tahsilat kaydedildi:", {
-            customerId: selectedCustomer.id,
-            amount: parseFloat(transactionAmount),
-            description: transactionDescription,
-            date: transactionDate
-        });
-        
         // Modal'ı kapat ve formları temizle
         setCollectionModalOpen(false);
         setTransactionAmount('');
@@ -139,8 +143,8 @@ export default function CustomerListPage() {
 
     const filteredCustomers = customers.filter(customer => {
         const matchesSearch = 
-            customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            customer.cardNo.toLowerCase().includes(searchTerm.toLowerCase())
+            (customer?.CustomerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (customer?.CardNumber?.toLowerCase() || '').includes(searchTerm.toLowerCase())
 
         return matchesSearch
     })
@@ -169,10 +173,12 @@ export default function CustomerListPage() {
                     {/* Customer Table */}
                     <CustomerTable 
                         customers={paginatedCustomers}
+                        filteredCustomers={filteredCustomers}
                         onViewSaleModal={openSaleModal}
                         onViewCollectionModal={openCollectionModal}
                         onViewStatement={viewStatement}
                         onViewDetailedStatement={viewDetailedStatement}
+                        isLoading={isLoading}
                     />
 
                     {/* Pagination */}

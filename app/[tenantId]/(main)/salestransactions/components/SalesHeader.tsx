@@ -3,11 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { exportToExcel } from "@/lib/export-utils"
 
-interface SalesHeaderProps {
-    filteredTransactions: any[]
-}
-
-export function SalesHeader({ filteredTransactions }: SalesHeaderProps) {
+export function SalesHeader() {
     const formatSalesData = (data: any[]) => {
         return data.map(item => ({
             'Tarih': item.date,
@@ -27,12 +23,6 @@ export function SalesHeader({ filteredTransactions }: SalesHeaderProps) {
                     Satış işlemlerini takip edin
                 </p>
             </div>
-            <Button
-                onClick={() => exportToExcel(formatSalesData(filteredTransactions), 'satis-islemleri')}
-                className="bg-green-600 hover:bg-green-700 text-white"
-            >
-                Excel'e Aktar
-            </Button>
         </div>
     )
 }
