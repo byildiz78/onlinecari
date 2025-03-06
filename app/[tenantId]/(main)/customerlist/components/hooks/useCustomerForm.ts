@@ -15,7 +15,8 @@ export function useCustomerForm(customerKey?: string) {
   const { selectedCustomer, setSelectedCustomer, addCustomer, updateCustomer } = useCustomerStore()
   const { 
     addCustomer: addToCustomersList, 
-    updateCustomer: updateInCustomersList 
+    updateCustomer: updateInCustomersList,
+    customers
   } = useCustomersStore()
   const { removeTab, setActiveTab } = useTabStore()
   const hasInitializedRef = useRef(false)
@@ -103,13 +104,24 @@ export function useCustomerForm(customerKey?: string) {
     try {
       setIsLoading(true)
       setError("")
-      const response = await axios.get(`/api/main/customers/customer-crud/customer-get?customerKey=${key}`)
-
-      if (response.data.success && response.data.customer) {
-        setSelectedCustomer(response.data.customer)
-        fillFormWithCustomerData(response.data.customer)
+      
+      // Önce store'dan müşteriyi ara
+      const customerFromStore = customers.find(c => c.CustomerKey === key)
+      
+      if (customerFromStore) {
+        // Store'da müşteri varsa, API çağrısı yapmadan kullan
+        setSelectedCustomer(customerFromStore)
+        fillFormWithCustomerData(customerFromStore)
       } else {
-        setError(response.data.message || 'Müşteri bulunamadı')
+        // Store'da müşteri yoksa, API'den getir
+        const response = await axios.get(`/api/main/customers/customer-crud/customer-get?customerKey=${key}`)
+
+        if (response.data.success && response.data.customer) {
+          setSelectedCustomer(response.data.customer)
+          fillFormWithCustomerData(response.data.customer)
+        } else {
+          setError(response.data.message || 'Müşteri bulunamadı')
+        }
       }
     } catch (error) {
       console.error('Müşteri getirme hatası:', error)
@@ -121,7 +133,7 @@ export function useCustomerForm(customerKey?: string) {
     } finally {
       setIsLoading(false)
     }
-  }, [fillFormWithCustomerData, setSelectedCustomer])
+  }, [fillFormWithCustomerData, setSelectedCustomer, customers])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

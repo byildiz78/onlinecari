@@ -14,7 +14,60 @@ export default async function handler(
     try {
         const tenantId = extractTenantId(req.headers.referer);
         const query = `
-            SELECT * FROM [${tenantId}].bonus_customerfiles WITH (NOLOCK) WHERE CustomerIsActive = 1
+              SELECT 
+            CustomerKey,
+            CustomerName,
+            CustomerFullName,
+            BranchID,
+            BonusStartupValue,
+            TotalBonusUsed,
+            TotalBonusEarned,
+            TotalBonusRemaing,
+            PhoneNumber,
+            TaxNumber,
+            TaxOfficeName,
+            AddressNotes,
+            BirthDay,
+            Age,
+            -- MaritialStatus alanını metin değerine dönüştür
+            CASE 
+                WHEN MaritialStatus = 0 THEN 'single'
+                WHEN MaritialStatus = 1 THEN 'married'
+                ELSE 'unknown'
+            END AS MaritialStatus,
+            -- Sexuality alanını metin değerine dönüştür
+            CASE 
+                WHEN Sexuality = 0 THEN 'male'
+                WHEN Sexuality = 1 THEN 'female'
+                ELSE 'unknown'
+            END AS Sexuality,
+            EmailAddress,
+            FacebookAccount,
+            TwitterAccount,
+            WebSite,
+            CreditLimit,
+            -- CreditStatusID alanını metin değerine dönüştür
+            CASE 
+                WHEN CreditSatusID = 0 THEN 'active'
+                WHEN CreditSatusID = 1 THEN 'passive'
+                WHEN CreditSatusID = 2 THEN 'blocked'
+                ELSE 'unknown'
+            END AS CreditSatusID,
+            DiscountPercent,
+            SpecialBonusPercent,
+            BonusStartupValue,
+            CardNumber,
+            -- CardType alanını standardize et
+            CASE 
+                WHEN CardType = 'meal' THEN 'meal'
+                WHEN CardType = 'gift' THEN 'gift'
+                WHEN CardType = 'corporate' THEN 'corporate'
+                ELSE 'unknown'
+            END AS CardType,
+            ProximityCardID,
+            CustomerSpecialNotes
+        FROM [${tenantId}].bonus_customerfiles WITH (NOLOCK)
+        WHERE CustomerIsActive = 1
         `;
         const instance = Dataset.getInstance();
 
