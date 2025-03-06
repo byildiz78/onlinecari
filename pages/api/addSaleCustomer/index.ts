@@ -128,23 +128,23 @@ export default async function handler(
         const cardNo = customerResult[0].CardNumber || '';
         const customerKey = customerResult[0].CustomerKey || '';
 
-        // Tahsilat işlemini kaydet
+        // Satış işlemini kaydet
         const result = await instance.executeQuery<SqlResult[]>({
             query: `
-                DECLARE @IsSuccess BIT = 0;
+                 DECLARE @IsSuccess BIT = 0;
                 DECLARE @Message NVARCHAR(200) = '';
                 DECLARE @InsertedID INT = 0;
 
                 BEGIN TRY
-                    -- Tahsilat işlemini kaydet
+                    -- Satış işlemini kaydet
                     INSERT INTO [${tenantId}].bonus_transactions (
                         BranchID,
                         OrderDateTime,
                         PaymentKey,
                         OrderKey,
                         AmountDue,
-                        BonusEarned,
                         BonusUsed,
+                        BonusEarned,
                         LineDeleted,
                         CardNo,
                         CustomerKey,
@@ -160,8 +160,8 @@ export default async function handler(
                         @PaymentKey,
                         @OrderKey,
                         @AmountDue,
-                        @BonusEarned,
                         @BonusUsed,
+                        @BonusEarned,
                         @LineDeleted,
                         @CardNo,
                         @CustomerKey,
@@ -178,8 +178,8 @@ export default async function handler(
                     -- Müşteri bakiye bilgilerini güncelle
                     UPDATE [${tenantId}].bonus_customerfiles
                     SET 
-                        TotalBonusUsed = ISNULL(TotalBonusUsed, 0) + @BonusUsed,
-                        TotalBonusRemaing = ISNULL(TotalBonusRemaing, 0) - @BonusUsed,
+                        TotalBonusEarned = ISNULL(TotalBonusEarned, 0) + @BonusEarned,
+                        TotalBonusRemaing = ISNULL(TotalBonusRemaing, 0) + @BonusEarned,
                         EditDateTime = @EditDateTime
                     WHERE CustomerKey = @CustomerKey;
                     
@@ -206,7 +206,7 @@ export default async function handler(
                     WHERE CustomerKey = @CustomerKey;
 
                     SET @IsSuccess = 1;
-                    SET @Message = 'Tahsilat işlemi başarıyla kaydedildi';
+                    SET @Message = 'Satış işlemi başarıyla kaydedildi';
                 END TRY
                 BEGIN CATCH
                     SET @IsSuccess = 0;
@@ -220,14 +220,14 @@ export default async function handler(
                 PaymentKey: collectionData.paymentKey || '00000000-0000-0000-0000-000000000000',
                 OrderKey: collectionData.orderKey || '00000000-0000-0000-0000-000000000000',
                 AmountDue: collectionData.amount,
-                BonusEarned: collectionData.bonusEarned || collectionData.amount,
-                BonusUsed: collectionData.bonusUsed || 0,
+                BonusEarned: collectionData.bonusEarned || 0,
+                BonusUsed: collectionData.bonusUsed || collectionData.amount,
                 LineDeleted: collectionData.lineDeleted || 0,
                 CardNo: cardNo,
                 CustomerKey: customerKey,
                 CustomerName: customerName,
                 Description: collectionData.description || '',
-                TransactionType: collectionData.transactionType || 'Infınıa Tahsilat - Alacak',
+                TransactionType: collectionData.transactionType || 'Infınıa Satış - Borç',
                 AddDateTime: collectionData.addDateTime || new Date().toISOString(),
                 EditDateTime: collectionData.editDateTime || new Date().toISOString(),
                 BonusTransactionKey: collectionData.bonusTransactionKey || uuidv4(),
@@ -239,7 +239,7 @@ export default async function handler(
         if (!result?.[0]?.IsSuccess) {
             return res.status(400).json({
                 success: false,
-                message: result?.[0]?.Message || 'Tahsilat işlemi kaydedilirken bir hata oluştu',
+                message: result?.[0]?.Message || 'Satış işlemi kaydedilirken bir hata oluştu',
                 error: 'INSERT_ERROR'
             });
         }
@@ -270,10 +270,10 @@ export default async function handler(
         });
 
     } catch (error) {
-        console.error('Tahsilat işlemi hatası:', error);
+        console.error('Satış işlemi hatası:', error);
         return res.status(500).json({
             success: false,
-            message: 'Tahsilat işlemi kaydedilirken bir hata oluştu',
+            message: 'Satış işlemi kaydedilirken bir hata oluştu',
             error: error instanceof Error ? {
                 message: error.message,
                 stack: error.stack

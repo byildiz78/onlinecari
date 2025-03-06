@@ -155,6 +155,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         EditDateTime = @CurrentDate
                     WHERE CustomerKey = @CustomerKey;
                     
+
+                    -- Kalan puanları güncelle
+                    UPDATE [${tenantId}].bonus_customerfiles 
+                    SET TotalBonusRemaing = ISNULL(BonusStartupValue, 0) + ISNULL(TotalBonusEarned, 0) - ISNULL(TotalBonusUsed, 0)
+                    WHERE CustomerKey = @CustomerKey;
+
                     SET @IsSuccess = 1;
                     SET @Message = 'Müşteri başarıyla güncellendi';
                 END TRY
@@ -196,7 +202,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             tenantId,
             req
         });
-        
+
         if (!result?.[0]?.IsSuccess) {
             return res.status(400).json({
                 success: false,
