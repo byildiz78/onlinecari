@@ -17,13 +17,27 @@ export default async function handler(
 
     // Body'den CustomerKey değerini alıyoruz
     const customerRequest: CustomerRequest = req.body;
-    const { customerKey, apiKey } = customerRequest;
+    const { customerKey, apiKey, customerName, cardNumber } = customerRequest;
 
-    if (!customerKey || typeof customerKey !== 'string' || !apiKey || typeof apiKey !== 'string') {
+    // API key kontrolü
+    if (!apiKey || typeof apiKey !== 'string') {
         return res.status(400).json({ 
             success: false,
-            message: 'Body içerisinde geçerli bir CustomerKey ve apikey gereklidir',
-            error: 'Body içerisinde geçerli bir CustomerKey ve apikey gereklidir' 
+            message: 'Body içerisinde geçerli bir apiKey gereklidir',
+            error: 'Body içerisinde geçerli bir apiKey gereklidir' 
+        });
+    }
+
+    // En az bir tanımlayıcı (customerKey, customerName, cardNumber) olup olmadığını kontrol et
+    const hasCustomerKey = customerKey && typeof customerKey === 'string';
+    const hasCustomerName = customerName && typeof customerName === 'string';
+    const hasCardNumber = cardNumber && typeof cardNumber === 'string';
+
+    if (!hasCustomerKey && !hasCustomerName && !hasCardNumber) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Body içerisinde geçerli bir CustomerKey, CustomerName veya CardNumber değerlerinden en az biri gereklidir',
+            error: 'Body içerisinde geçerli bir CustomerKey, CustomerName veya CardNumber değerlerinden en az biri gereklidir' 
         });
     }
 
@@ -118,14 +132,20 @@ export default async function handler(
         FROM ${tenantId}.bonus_customerfiles WITH (NOLOCK)
         WHERE 1=1
         AND CustomerIsActive = 1
-        AND CustomerKey = @CustomerKey
+        AND (
+            (@CustomerKey <> '' AND TRY_CONVERT(UNIQUEIDENTIFIER, @CustomerKey) IS NOT NULL AND CustomerKey = TRY_CONVERT(UNIQUEIDENTIFIER, @CustomerKey)) OR
+            (@CardNumber <> '' AND CardNumber = @CardNumber) OR
+            (@CustomerName <> '' AND CustomerName = @CustomerName)
+        )
         `;
 
         const instance = Dataset.getInstance();
         const result = await instance.executeQuery<any[]>({
             query,
             parameters: {
-                CustomerKey: customerKey.toString()
+                CustomerKey: customerKey?.toString() || '',
+                CardNumber: cardNumber?.toString() || '',
+                CustomerName: customerName?.toString() || ''
             },
             tenantId: tenantId,
             req,

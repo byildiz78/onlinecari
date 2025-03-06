@@ -2,6 +2,8 @@
 export interface CustomerRequest {
   customerKey: string;
   apiKey: string;
+  customerName?: string;
+  cardNumber?: string;
 }
 
 // Müşteri yanıtı için model

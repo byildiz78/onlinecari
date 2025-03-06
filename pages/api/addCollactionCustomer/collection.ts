@@ -1,9 +1,13 @@
 // Tahsilat işlemi için model
 export interface CollectionRequest {
     // Zorunlu alanlar
-    customerKey: string;
+    // Not: customerKey, customerName ve cardNumber alanlarından en az biri gereklidir.
+    // Birden fazla tanımlayıcı da gönderilebilir.
+    customerKey?: string;
     amount: number;
     apiKey: string;
+    customerName?: string;
+    cardNumber?: string;
   
     // İsteğe bağlı alanlar
     description?: string;
@@ -38,8 +42,9 @@ export interface CollectionRequest {
   
   // Müşteri bilgileri için model
   export interface CustomerInfo {
-    CustomerName: string;
+    CustomerName?: string;
     CardNumber?: string;
+    CustomerKey?: string;
   }
   
   // SQL sorgu sonucu için model
@@ -48,4 +53,3 @@ export interface CollectionRequest {
     IsSuccess: boolean;
     Message: string;
   }
-  

@@ -59,7 +59,7 @@ export class Dataset {
                 data: body,
                 headers,
             });
-            
+            console.log('console',response);
             return response.data.data as T;
         } catch (error) {
             if (isAxiosError(error)) {
