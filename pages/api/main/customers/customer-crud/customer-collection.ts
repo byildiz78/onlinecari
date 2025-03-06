@@ -33,7 +33,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const tenantId = extractTenantId(req.headers.referer);
         const bonusTransactionKey = uuidv4();
         const currentDate = new Date().toISOString();
-        const orderDateTime = collectionData.date ? new Date(collectionData.date).toISOString() : currentDate;
 
         // Müşteri bilgilerini al
         const customerResult = await instance.executeQuery({
@@ -159,7 +158,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 CustomerKey: collectionData.customerKey,
                 CustomerName: customerName,
                 Description: collectionData.description || '',
-                TransactionType: 'Robotpos - Alacak',
+                TransactionType: 'Merkezi Tahsilat - Alacak',
                 AddDateTime: currentDate,
                 EditDateTime: currentDate,
                 BonusTransactionKey: bonusTransactionKey,
