@@ -31,7 +31,8 @@ import {
     Building2,
     Wallet,
     Star,
-    AlertCircle
+    AlertCircle,
+    Loader2
 } from 'lucide-react'
 import { useMemo } from "react"
 
@@ -229,17 +230,35 @@ export function CustomerTable({
                                             "font-medium",
                                             customer.balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
                                         )}>
-                                            {formatCurrency(customer.TotalBonusRemaing || 0)}
+                                            {customer.isLoadingBonus ? (
+                                                <span className="flex items-center justify-end">
+                                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                </span>
+                                            ) : (
+                                                formatCurrency(customer.TotalBonusRemaing || 0)
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="font-medium text-blue-600 dark:text-blue-400">
-                                            {formatCurrency(customer.TotalBonusEarned || 0)}
+                                            {customer.isLoadingBonus ? (
+                                                <span className="flex items-center justify-end">
+                                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                </span>
+                                            ) : (
+                                                formatCurrency(customer.TotalBonusEarned || 0)
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="font-medium text-red-600 dark:text-red-400">
-                                            {formatCurrency(customer.TotalBonusUsed || 0)}
+                                            {customer.isLoadingBonus ? (
+                                                <span className="flex items-center justify-end">
+                                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                </span>
+                                            ) : (
+                                                formatCurrency(customer.TotalBonusUsed || 0)
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">

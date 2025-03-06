@@ -40,16 +40,11 @@ export default function CreateCustomer({ customerKey }: CreateCustomerProps) {
 
   // Düzenleme modu için müşteri verilerini yükle
   useEffect(() => {
-    if (customerKey) {
+    if (customerKey && !hasInitializedRef.current) {
       setIsEditMode(true)
-
-      // Eğer daha önce bu component için API çağrısı yapılmadıysa
-      if (!hasInitializedRef.current) {
-        // Müşteri verilerini getir (useCustomerForm içinde artık store'dan kontrol ediliyor)
-        fetchCustomerByKey(customerKey)
-        hasInitializedRef.current = true;
-      }
-    } else {
+      fetchCustomerByKey(customerKey)
+      hasInitializedRef.current = true;
+    } else if (!customerKey) {
       // Yeni müşteri oluşturma modu
       setIsEditMode(false)
       setSelectedCustomer(null)

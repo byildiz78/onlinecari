@@ -94,12 +94,44 @@ export default function CustomerListPage() {
                 date: transactionDate
             };
             
+            // Bonus alanlarının yükleme durumunu güncelle
+            const { setCustomers, customers } = useCustomersStore.getState();
+            const updatedCustomers = customers.map(c => {
+                if (c.CustomerKey === selectedCustomer.CustomerKey) {
+                    return { ...c, isLoadingBonus: true };
+                }
+                return c;
+            });
+            setCustomers(updatedCustomers);
+            
             // API isteği gönder
             const response = await axios.post('/api/main/customers/customer-crud/customer-sale', saleData);
             
-            // Başarılı olduğunda store'u güncelle
-            const { updateCustomerBalance } = useCustomersStore.getState();
-            updateCustomerBalance(selectedCustomer.CustomerKey?.toString() || '', parseFloat(transactionAmount), true);
+            // İşlem sonrası güncel müşteri verilerini al
+            const customerResponse = await axios.get(`/api/main/customers/customer-crud/customer-get?customerKey=${selectedCustomer.CustomerKey}`);
+            
+            if (customerResponse.data.success && customerResponse.data.customer) {
+                // Müşteri listesini güncelle
+                const { updateCustomer } = useCustomersStore.getState();
+                const updatedCustomer = { 
+                    ...customerResponse.data.customer,
+                    isLoadingBonus: false 
+                };
+                updateCustomer(updatedCustomer);
+                
+                // Seçili müşteriyi güncelle
+                setSelectedCustomer(updatedCustomer);
+            } else {
+                // API'den veri alınamazsa, loading durumunu kaldır
+                const { setCustomers, customers } = useCustomersStore.getState();
+                const resetCustomers = customers.map(c => {
+                    if (c.CustomerKey === selectedCustomer.CustomerKey) {
+                        return { ...c, isLoadingBonus: false };
+                    }
+                    return c;
+                });
+                setCustomers(resetCustomers);
+            }
             
             // Modalı kapat
             setSaleModalOpen(false);
@@ -116,6 +148,17 @@ export default function CustomerListPage() {
             setTransactionDescription('');
         } catch (error) {
             console.error('Satış işlemi kaydedilirken hata oluştu:', error);
+            
+            // Hata durumunda loading durumunu kaldır
+            const { setCustomers, customers } = useCustomersStore.getState();
+            const resetCustomers = customers.map(c => {
+                if (c.CustomerKey === selectedCustomer?.CustomerKey) {
+                    return { ...c, isLoadingBonus: false };
+                }
+                return c;
+            });
+            setCustomers(resetCustomers);
+            
             toast({
                 title: "Hata!",
                 description: "Satış işlemi kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
@@ -141,12 +184,44 @@ export default function CustomerListPage() {
                 date: transactionDate
             };
             
+            // Bonus alanlarının yükleme durumunu güncelle
+            const { setCustomers, customers } = useCustomersStore.getState();
+            const updatedCustomers = customers.map(c => {
+                if (c.CustomerKey === selectedCustomer.CustomerKey) {
+                    return { ...c, isLoadingBonus: true };
+                }
+                return c;
+            });
+            setCustomers(updatedCustomers);
+            
             // API isteği gönder
             const response = await axios.post('/api/main/customers/customer-crud/customer-collection', collectionData);
             
-            // Başarılı olduğunda store'u güncelle
-            const { updateCustomerBalance } = useCustomersStore.getState();
-            updateCustomerBalance(selectedCustomer.CustomerKey?.toString() || '', parseFloat(transactionAmount), false);
+            // İşlem sonrası güncel müşteri verilerini al
+            const customerResponse = await axios.get(`/api/main/customers/customer-crud/customer-get?customerKey=${selectedCustomer.CustomerKey}`);
+            
+            if (customerResponse.data.success && customerResponse.data.customer) {
+                // Müşteri listesini güncelle
+                const { updateCustomer } = useCustomersStore.getState();
+                const updatedCustomer = { 
+                    ...customerResponse.data.customer,
+                    isLoadingBonus: false 
+                };
+                updateCustomer(updatedCustomer);
+                
+                // Seçili müşteriyi güncelle
+                setSelectedCustomer(updatedCustomer);
+            } else {
+                // API'den veri alınamazsa, loading durumunu kaldır
+                const { setCustomers, customers } = useCustomersStore.getState();
+                const resetCustomers = customers.map(c => {
+                    if (c.CustomerKey === selectedCustomer.CustomerKey) {
+                        return { ...c, isLoadingBonus: false };
+                    }
+                    return c;
+                });
+                setCustomers(resetCustomers);
+            }
             
             // Modalı kapat
             setCollectionModalOpen(false);
@@ -163,6 +238,17 @@ export default function CustomerListPage() {
             setTransactionDescription('');
         } catch (error) {
             console.error('Tahsilat işlemi kaydedilirken hata oluştu:', error);
+            
+            // Hata durumunda loading durumunu kaldır
+            const { setCustomers, customers } = useCustomersStore.getState();
+            const resetCustomers = customers.map(c => {
+                if (c.CustomerKey === selectedCustomer?.CustomerKey) {
+                    return { ...c, isLoadingBonus: false };
+                }
+                return c;
+            });
+            setCustomers(resetCustomers);
+            
             toast({
                 title: "Hata!",
                 description: "Tahsilat işlemi kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.",
@@ -217,6 +303,7 @@ export default function CustomerListPage() {
     }
 
     const viewCustomerDetails = (customer: any) => {
+        // Müşteri verisini doğrudan kullan, bonus bilgileri zaten store'da var
         setSelectedCustomer(customer);
         const tabId = `edit-customer-${customer.CustomerKey}`;
         
