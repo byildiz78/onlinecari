@@ -106,34 +106,76 @@ export function useCustomerForm(customerKey?: string) {
       setError("")
       
       // Önce store'dan müşteriyi ara
+      const { customers } = useCustomersStore.getState();
       const customerFromStore = customers.find(c => c.CustomerKey === key)
       
       if (customerFromStore) {
-        // Store'da müşteri varsa, API çağrısı yapmadan kullan
-        setSelectedCustomer(customerFromStore)
-        fillFormWithCustomerData(customerFromStore)
+        // Store'da müşteri varsa, direkt olarak kullan
+        setSelectedCustomer(customerFromStore);
+        fillFormWithCustomerData(customerFromStore);
+        
+        // Eğer bonus bilgileri eksikse, API'den tamamlayalım
+        if (customerFromStore.TotalBonusRemaing === undefined || 
+            customerFromStore.TotalBonusEarned === undefined || 
+            customerFromStore.TotalBonusUsed === undefined) {
+          
+          try {
+            const response = await axios.get(`/api/main/customers/customer-crud/customer-get?customerKey=${key}`)
+            
+            if (response.data.success && response.data.customer) {
+              // API'den gelen güncel bonus bilgilerini al
+              const { TotalBonusRemaing, TotalBonusEarned, TotalBonusUsed, BonusStartupValue } = response.data.customer;
+              
+              // Müşteriyi güncelle
+              const finalCustomer = { 
+                ...customerFromStore, 
+                TotalBonusRemaing, 
+                TotalBonusEarned, 
+                TotalBonusUsed,
+                BonusStartupValue
+              };
+              
+              // Store'u güncelle
+              const { updateCustomer } = useCustomersStore.getState();
+              updateCustomer(finalCustomer);
+              
+              // Form verilerini güncelle
+              setSelectedCustomer(finalCustomer);
+              fillFormWithCustomerData(finalCustomer);
+            }
+          } catch (error) {
+            console.error('Bonus bilgileri alınamadı:', error);
+          }
+        }
       } else {
         // Store'da müşteri yoksa, API'den getir
-        const response = await axios.get(`/api/main/customers/customer-crud/customer-get?customerKey=${key}`)
-
-        if (response.data.success && response.data.customer) {
-          setSelectedCustomer(response.data.customer)
-          fillFormWithCustomerData(response.data.customer)
-        } else {
-          setError(response.data.message || 'Müşteri bulunamadı')
+        try {
+          const response = await axios.get(`/api/main/customers/customer-crud/customer-get?customerKey=${key}`)
+          
+          if (response.data.success && response.data.customer) {
+            const customer = response.data.customer;
+            setSelectedCustomer(customer);
+            fillFormWithCustomerData(customer);
+            
+            // Store'u güncelle
+            const { updateCustomer } = useCustomersStore.getState();
+            updateCustomer(customer);
+          } else {
+            setError(response.data.message || 'Müşteri bulunamadı');
+          }
+        } catch (error) {
+          console.error('Müşteri getirme hatası:', error);
+          if (isAxiosError(error)) {
+            setError(error.response?.data?.message || error.message || 'Müşteri bilgileri alınamadı');
+          } else {
+            setError(error instanceof Error ? error.message : 'Müşteri bilgileri alınamadı');
+          }
         }
-      }
-    } catch (error) {
-      console.error('Müşteri getirme hatası:', error)
-      if (isAxiosError(error)) {
-        setError(error.response?.data?.message || error.message || 'Müşteri bilgileri alınamadı')
-      } else {
-        setError(error instanceof Error ? error.message : 'Müşteri bilgileri alınamadı')
       }
     } finally {
       setIsLoading(false)
     }
-  }, [fillFormWithCustomerData, setSelectedCustomer, customers])
+  }, [fillFormWithCustomerData, setSelectedCustomer])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -216,21 +258,32 @@ export function useCustomerForm(customerKey?: string) {
       const data = response.data
 
       if (data.success) {
-        // Başarılı işlem
-        const updatedCustomer = {
-          ...customerPayload,
-          CustomerKey: selectedCustomer?.CustomerKey || data.customerKey,
-          CustomerID: data.customerID || data.autoId,
-          // Kart numarası boşsa otomatik oluştur
-          CardNumber: customerData.customerCard || `${1000000 + (data.customerID || data.autoId)}`,
-          // Bakiye bilgilerini koru veya varsayılan değerler ata
-          TotalBonusRemaing: selectedCustomer?.TotalBonusRemaing || 0,
-          TotalBonusEarned: selectedCustomer?.TotalBonusEarned || 0,
-          TotalBonusUsed: selectedCustomer?.TotalBonusUsed || 0,
-          TotalDebt: selectedCustomer?.TotalDebt || 0,
-          TotalPayment: selectedCustomer?.TotalPayment || 0,
-          TotalRemainig: selectedCustomer?.TotalRemainig || 0
-        };
+        // İşlem sonrası güncel müşteri verilerini al
+        const customerKey = selectedCustomer?.CustomerKey || data.customerKey;
+        const customerResponse = await axios.get(`/api/main/customers/customer-crud/customer-get?customerKey=${customerKey}`);
+        
+        let updatedCustomer;
+        
+        if (customerResponse.data.success && customerResponse.data.customer) {
+          // API'den gelen güncel verileri kullan
+          updatedCustomer = customerResponse.data.customer;
+        } else {
+          // API'den güncel veri alınamazsa, mevcut verilerle devam et
+          updatedCustomer = {
+            ...customerPayload,
+            CustomerKey: customerKey,
+            CustomerID: data.customerID || data.autoId,
+            // Kart numarası boşsa otomatik oluştur
+            CardNumber: customerData.customerCard || `${1000000 + (data.customerID || data.autoId)}`,
+            // Bakiye bilgilerini koru veya varsayılan değerler ata
+            TotalBonusRemaing: selectedCustomer?.TotalBonusRemaing || customerData.pointStartDate ? parseFloat(customerData.pointStartDate) : 0,
+            TotalBonusEarned: selectedCustomer?.TotalBonusEarned || 0,
+            TotalBonusUsed: selectedCustomer?.TotalBonusUsed || 0,
+            TotalDebt: selectedCustomer?.TotalDebt || 0,
+            TotalPayment: selectedCustomer?.TotalPayment || 0,
+            TotalRemainig: selectedCustomer?.TotalRemainig || 0
+          };
+        }
 
         if (isEditMode) {
           // Güncelleme işlemi
